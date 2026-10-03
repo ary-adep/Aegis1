@@ -189,6 +189,10 @@ For requirements work:
 - identify acceptance criteria;
 - identify decisions requiring human input.
 
+For dedicated requirements analysis, use the `requirements-analysis` skill.
+
+Requirements Analysis is read-only by default and must not silently turn business intent into architecture or implementation decisions.
+
 Do not invent business rules.
 
 If multiple interpretations materially change the design, stop and ask the human.
@@ -451,6 +455,11 @@ For pure System Discovery:
 - use its reporting convention;
 - do not append a generic Aegis1 status afterward.
 
+For pure Requirements Analysis:
+- follow `requirements-analysis/SKILL.md`;
+- use its reporting convention;
+- do not append a generic Aegis1 status afterward.
+
 For pure Architecture Analysis:
 
 - follow `architecture-analysis/SKILL.md`;
@@ -459,6 +468,23 @@ For pure Architecture Analysis:
 
 ```text
 ARCHITECTURE ANALYSIS COMPLETE
+```
+
+Do not append:
+
+- READY FOR APPROVAL;
+- NEEDS HUMAN DECISION;
+- BLOCKED;
+- FAILED VERIFICATION.
+
+For pure Requirements Analysis:
+
+- follow `requirements-analysis/SKILL.md`;
+- use its reporting convention;
+- end with exactly:
+
+```text
+REQUIREMENTS ANALYSIS COMPLETE
 ```
 
 Do not append:
@@ -485,6 +511,12 @@ Possible workflows include:
 Inspect and explain the current system.
 
 If understanding requires multiple repositories, services, libraries, adapters, or integrations, perform System Discovery first.
+
+### Requirements Analysis
+
+Establish what must be built or changed, clarify ambiguity, define testable acceptance criteria, and bound scope.
+
+Use `requirements-analysis` for dedicated requirements work. Do not design or implement during pure Requirements Analysis.
 
 ### Analyze
 
@@ -760,6 +792,22 @@ For pure Architecture Analysis:
 
 ```text
 ARCHITECTURE ANALYSIS COMPLETE
+```
+
+Do not append:
+
+- READY FOR APPROVAL;
+- NEEDS HUMAN DECISION;
+- BLOCKED;
+- FAILED VERIFICATION.
+
+For pure Requirements Analysis:
+
+- follow the `requirements-analysis` skill's reporting convention;
+- end with exactly:
+
+```text
+REQUIREMENTS ANALYSIS COMPLETE
 ```
 
 Do not append:

@@ -26,6 +26,8 @@ Do not force the complete lifecycle when the task does not require it.
 
 Inspect the project and available evidence before making consequential changes.
 
+For requirements extraction, ambiguity analysis, scope, constraints, acceptance criteria, or requirement traceability, use the `requirements-analysis` skill.
+
 For system-level understanding involving multiple repositories, services, libraries, adapters, integrations, or service-to-service communication, use the `system-discovery` skill before making architectural conclusions.
 
 For architectural evaluation, trade-offs, risks, or options, use the `architecture-analysis` skill after sufficient system understanding.
