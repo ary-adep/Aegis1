@@ -193,6 +193,8 @@ For dedicated requirements analysis, use the `requirements-analysis` skill.
 
 Requirements Analysis is read-only by default and must not silently turn business intent into architecture or implementation decisions.
 
+For dedicated implementation planning, use the `implementation-planning` skill to map approved requirements and architecture to concrete changes, tests, and verification.
+
 Do not invent business rules.
 
 If multiple interpretations materially change the design, stop and ask the human.
@@ -456,18 +458,13 @@ For pure System Discovery:
 - do not append a generic Aegis1 status afterward.
 
 For pure Requirements Analysis:
+
 - follow `requirements-analysis/SKILL.md`;
-- use its reporting convention;
-- do not append a generic Aegis1 status afterward.
-
-For pure Architecture Analysis:
-
-- follow `architecture-analysis/SKILL.md`;
 - use its reporting convention;
 - end with exactly:
 
 ```text
-ARCHITECTURE ANALYSIS COMPLETE
+REQUIREMENTS ANALYSIS COMPLETE
 ```
 
 Do not append:
@@ -477,14 +474,31 @@ Do not append:
 - BLOCKED;
 - FAILED VERIFICATION.
 
-For pure Requirements Analysis:
+For pure Implementation Planning:
 
-- follow `requirements-analysis/SKILL.md`;
+- follow `implementation-planning/SKILL.md`;
 - use its reporting convention;
 - end with exactly:
 
 ```text
-REQUIREMENTS ANALYSIS COMPLETE
+IMPLEMENTATION PLAN COMPLETE
+```
+
+Do not append:
+
+- READY FOR APPROVAL;
+- NEEDS HUMAN DECISION;
+- BLOCKED;
+- FAILED VERIFICATION.
+
+For pure Architecture Analysis:
+
+- follow `architecture-analysis/SKILL.md`;
+- use its reporting convention;
+- end with exactly:
+
+```text
+ARCHITECTURE ANALYSIS COMPLETE
 ```
 
 Do not append:
@@ -517,6 +531,14 @@ If understanding requires multiple repositories, services, libraries, adapters, 
 Establish what must be built or changed, clarify ambiguity, define testable acceptance criteria, and bound scope.
 
 Use `requirements-analysis` for dedicated requirements work. Do not design or implement during pure Requirements Analysis.
+
+### Implementation Planning
+
+Translate understood requirements and approved architectural direction into an evidence-based implementation plan.
+
+Identify affected components, files, APIs, data, configuration, integrations, implementation sequence, tests, compatibility, rollout/rollback considerations, and risks.
+
+Use `implementation-planning` for dedicated implementation planning. Do not modify the system during pure Implementation Planning.
 
 ### Analyze
 
@@ -808,6 +830,22 @@ For pure Requirements Analysis:
 
 ```text
 REQUIREMENTS ANALYSIS COMPLETE
+```
+
+Do not append:
+
+- READY FOR APPROVAL;
+- NEEDS HUMAN DECISION;
+- BLOCKED;
+- FAILED VERIFICATION.
+
+For pure Implementation Planning:
+
+- follow the `implementation-planning` skill's reporting convention;
+- end with exactly:
+
+```text
+IMPLEMENTATION PLAN COMPLETE
 ```
 
 Do not append:

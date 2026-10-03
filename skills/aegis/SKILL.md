@@ -32,7 +32,11 @@ For system-level understanding involving multiple repositories, services, librar
 
 For architectural evaluation, trade-offs, risks, or options, use the `architecture-analysis` skill after sufficient system understanding.
 
+For implementation planning, affected components, file-level changes, implementation sequencing, test planning, compatibility, rollout, rollback, or verification planning, use the `implementation-planning` skill before implementation.
+
 Do not treat discovery findings as architectural decisions.
+
+Do not treat an implementation plan as authorization to modify the system.
 
 Ask for human decisions when required by Aegis1 governance.
 
