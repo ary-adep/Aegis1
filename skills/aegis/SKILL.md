@@ -26,6 +26,12 @@ Do not force the complete lifecycle when the task does not require it.
 
 Inspect the project and available evidence before making consequential changes.
 
+For system-level understanding involving multiple repositories, services, libraries, adapters, integrations, or service-to-service communication, use the `system-discovery` skill before making architectural conclusions.
+
+For architectural evaluation, trade-offs, risks, or options, use the `architecture-analysis` skill after sufficient system understanding.
+
+Do not treat discovery findings as architectural decisions.
+
 Ask for human decisions when required by Aegis1 governance.
 
 Return the result of the task to the user.
