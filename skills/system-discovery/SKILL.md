@@ -3,104 +3,135 @@ name: system-discovery
 description: Discover and map a software workspace, including multiple repositories, services, libraries, adapters, dependencies, communication paths, data relationships, and external integrations. Use when system-level understanding is required.
 ---
 
-# Aegis1 System Discovery
+# System Discovery
 
 ## Purpose
 
-Build an evidence-based understanding of the software system before architecture, implementation, debugging, review, or verification work that requires cross-project context.
+System Discovery provides an evidence-based understanding of a software system before architecture analysis, implementation, debugging, review, or verification.
 
-This capability is primarily for workspaces containing:
+It answers:
 
-- multiple Git repositories;
-- multiple services;
-- shared libraries;
-- adapters;
-- integration projects;
-- infrastructure projects;
-- monorepos containing multiple applications.
+> What exists, and how is it connected?
 
-The objective is to understand what exists and how it relates.
+It does not answer:
 
-System Discovery must not redesign the system.
+> What should we change?
 
-System Discovery must not modify application source code.
+System Discovery is read-only by default.
+
+Do not modify application source code, configuration, build files, databases, documentation, or repository state during discovery.
 
 ---
 
 # 1. Discovery Principles
 
-Inspect before concluding.
+## Inspect before concluding
 
-Use actual repository evidence.
+Do not assume architecture from:
 
-Do not assume repository names describe their actual responsibility.
+- repository names;
+- directory names;
+- service names;
+- README descriptions;
+- conventional Spring Boot patterns;
+- package names;
+- Docker service names;
+- module names.
 
-Do not assume:
+Use repository evidence.
 
-- every repository is a service;
-- every Spring Boot application is independently deployable;
-- `common` means utility library;
-- `adapter` means external integration;
-- communication is REST;
-- dependencies imply runtime communication;
-- configuration values are unused;
-- documentation accurately describes current behavior;
-- similarly named services have the same responsibility.
+Prefer:
 
-Use evidence from the workspace.
-
-Distinguish every important finding as:
-
-- CONFIRMED — directly supported by evidence;
-- INFERRED — strongly suggested by evidence but not fully proven;
-- UNKNOWN — insufficient evidence.
-
-Never present an inference as confirmed architecture.
+- source code;
+- build files;
+- configuration;
+- API contracts;
+- database schemas;
+- deployment definitions;
+- messaging configuration;
+- integration configuration;
+- scripts;
+- tests;
+- documentation as supporting evidence.
 
 ---
 
-# 2. Workspace Discovery
+# 2. Evidence Classification
 
-First identify the workspace boundary.
+Every important finding must be classified as one of:
 
-Determine:
+### CONFIRMED
 
-- current working directory;
+Directly supported by source code, configuration, build files, schema, deployment configuration, or other strong workspace evidence.
+
+### INFERRED
+
+Not directly confirmed, but strongly supported by available evidence.
+
+Explain the evidence and why the relationship is inferred.
+
+### UNKNOWN
+
+The workspace does not contain enough evidence to establish the relationship.
+
+Do not convert UNKNOWN into an assumption.
+
+Never present an inferred relationship as confirmed.
+
+---
+
+# 3. Workspace Discovery
+
+First determine the workspace boundary.
+
+Inspect:
+
+- workspace folders;
+- top-level directories;
 - Git repositories;
-- nested repositories;
-- repository roots;
-- monorepo structure;
-- build systems;
-- project manifests;
-- top-level documentation;
-- architecture documentation;
-- configuration files.
+- nested Git repositories;
+- build roots;
+- multi-module structures;
+- deployment/infrastructure directories.
 
-For a parent directory containing multiple repositories:
+Determine whether the workspace contains:
 
-1. identify each repository independently;
-2. inspect each repository independently;
-3. preserve repository boundaries;
-4. correlate repositories only after individual discovery.
+- one repository;
+- multiple repositories;
+- a monorepo;
+- multiple independent applications;
+- shared libraries;
+- infrastructure repositories;
+- configuration repositories;
+- contracts repositories.
 
-Do not assume sibling directories are related until evidence supports the relationship.
+Do not assume every repository located near the workspace belongs to the system.
+
+For a multi-root workspace, analyze only repositories that are actually part of the workspace unless the user explicitly requests otherwise.
 
 ---
 
-# 3. Multi-Repository Discovery
+# 4. Multi-Repository Discovery
 
-When multiple independent Git repositories exist under one parent workspace:
+When multiple Git repositories are present:
 
-- identify each Git repository;
-- record its repository root;
-- identify its branch/status where relevant;
-- identify its build system;
-- identify its project type;
-- identify its dependencies;
-- identify its service/application role;
-- identify relationships crossing repository boundaries.
+1. Identify every repository in the workspace.
+2. Analyze each repository independently.
+3. Preserve repository boundaries.
+4. Identify the role of each repository.
+5. Identify cross-repository dependencies only after individual repository analysis.
+6. Correlate repositories using evidence.
 
 Distinguish:
 
+- Git repository boundary;
+- Maven/Gradle module boundary;
+- application boundary;
+- service boundary;
+- deployable boundary;
+- library boundary.
+
+Do not assume:
+
 ```text
-Repository relationship
+1 repository = 1 service
