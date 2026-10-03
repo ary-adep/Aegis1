@@ -1,6 +1,6 @@
 ---
 name: system-discovery
-description: Discover and map a software workspace, including multiple repositories, services, libraries, adapters, dependencies, communication paths, and external integrations. Use when system-level understanding is required.
+description: Discover and map a software workspace, including multiple repositories, services, libraries, adapters, dependencies, communication paths, data relationships, and external integrations. Use when system-level understanding is required.
 ---
 
 # Aegis1 System Discovery
@@ -9,9 +9,9 @@ description: Discover and map a software workspace, including multiple repositor
 
 Build an evidence-based understanding of the software system before architecture, implementation, debugging, review, or verification work that requires cross-project context.
 
-This skill is primarily for workspaces containing:
+This capability is primarily for workspaces containing:
 
-- multiple repositories;
+- multiple Git repositories;
 - multiple services;
 - shared libraries;
 - adapters;
@@ -19,13 +19,19 @@ This skill is primarily for workspaces containing:
 - infrastructure projects;
 - monorepos containing multiple applications.
 
-Do not modify application source code during discovery.
+The objective is to understand what exists and how it relates.
+
+System Discovery must not redesign the system.
+
+System Discovery must not modify application source code.
 
 ---
 
 # 1. Discovery Principles
 
 Inspect before concluding.
+
+Use actual repository evidence.
 
 Do not assume repository names describe their actual responsibility.
 
@@ -38,14 +44,15 @@ Do not assume:
 - communication is REST;
 - dependencies imply runtime communication;
 - configuration values are unused;
-- documentation accurately describes current behavior.
+- documentation accurately describes current behavior;
+- similarly named services have the same responsibility.
 
-Use repository evidence.
+Use evidence from the workspace.
 
-Distinguish:
+Distinguish every important finding as:
 
 - CONFIRMED — directly supported by evidence;
-- INFERRED — strongly suggested by evidence;
+- INFERRED — strongly suggested by evidence but not fully proven;
 - UNKNOWN — insufficient evidence.
 
 Never present an inference as confirmed architecture.
@@ -61,71 +68,39 @@ Determine:
 - current working directory;
 - Git repositories;
 - nested repositories;
-- monorepo structure;
 - repository roots;
+- monorepo structure;
 - build systems;
 - project manifests;
 - top-level documentation;
 - architecture documentation;
 - configuration files.
 
-For a parent directory containing multiple repositories, inspect each repository independently before correlating them.
+For a parent directory containing multiple repositories:
+
+1. identify each repository independently;
+2. inspect each repository independently;
+3. preserve repository boundaries;
+4. correlate repositories only after individual discovery.
 
 Do not assume sibling directories are related until evidence supports the relationship.
 
 ---
 
-# 3. Repository Classification
+# 3. Multi-Repository Discovery
 
-Classify each discovered repository based on evidence.
+When multiple independent Git repositories exist under one parent workspace:
 
-Possible classifications:
+- identify each Git repository;
+- record its repository root;
+- identify its branch/status where relevant;
+- identify its build system;
+- identify its project type;
+- identify its dependencies;
+- identify its service/application role;
+- identify relationships crossing repository boundaries.
 
-- SERVICE
-- SHARED_LIBRARY
-- ADAPTER
-- API_GATEWAY
-- FRONTEND
-- BATCH_APPLICATION
-- CLI
-- INFRASTRUCTURE
-- TEST
-- CONTRACT
-- DOCUMENTATION
-- UNKNOWN
-
-For each repository determine:
-
-- name;
-- path;
-- Git status;
-- language;
-- framework;
-- build system;
-- entry points;
-- deployable artifacts;
-- major modules;
-- relevant dependencies.
-
-If classification is uncertain, report the uncertainty.
-
----
-
-# 4. Build and Dependency Discovery
-
-Inspect build definitions such as:
-
-- `pom.xml`;
-- `build.gradle`;
-- package manifests;
-- module definitions;
-- dependency management;
-- version catalogs;
-- internal artifact references.
-
-Identify relationships such as:
+Distinguish:
 
 ```text
-Repository A
-    depends on
-Repository B
+Repository relationship
