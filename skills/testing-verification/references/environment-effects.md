@@ -2,6 +2,7 @@
 
 ## Contents
 
+- Disposable local artifacts
 - Classification principle
 - Read-only examples
 - Consequential examples
@@ -73,7 +74,7 @@ Determine the effect before execution when the environment is shared or conseque
 
 Prefer an already-running suitable resource when it can safely satisfy the test.
 
-Request approval only when creation/start/stop/restart/modification is necessary.
+Obtain approval before necessary consequential creation, start, stop, restart, or modification. Reuse does not authorize writes to shared data; inspect the test target and setup first.
 
 ## Approval
 
@@ -96,3 +97,7 @@ If an operation partially changes environment state:
 - do not silently clean up consequential state
 - identify recovery
 - escalate when necessary
+
+## Disposable local artifacts
+
+Routine temporary output within an inspected local test scope is not automatically consequential. Preserve source and user files. Before execution, inspect setup hooks and resource targets; approval follows actual effects, including shared or persistent writes. Production operations remain outside Aegis1 authority.

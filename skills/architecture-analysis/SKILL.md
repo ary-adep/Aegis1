@@ -1,9 +1,13 @@
 ---
-name: architecture-analysis
-description: Analyze an existing or proposed software architecture using evidence, identify boundaries, dependencies, data and communication behavior, consistency and availability trade-offs, risks, constraints, and viable options. Use after system or requirements understanding is sufficient and before consequential architectural decisions.
+name: "architecture-analysis"
+description: "Analyzes existing or proposed software architecture, evidence, constraints, and trade-offs. Use for architectural assessment before consequential design decisions; does not implement changes."
 ---
 
 # Architecture Analysis
+
+## Shared governance
+
+Read [Aegis1 governance](../../agents/aegis1.md) for authority, evidence, working-tree safety, and Git/production boundaries. This specialist's scope and terminal statuses take precedence over generic reporting. Read linked references only when relevant.
 
 ## Purpose
 
@@ -97,8 +101,12 @@ Report:
 14. Human decisions required.
 15. Unknowns/evidence gaps.
 
-## Terminal status
+## Terminal statuses
 
-End with exactly:
+End the report with exactly one status line:
 
-`ARCHITECTURE ANALYSIS COMPLETE`
+- `ARCHITECTURE ANALYSIS COMPLETE` — the requested assessment is finished and options, evidence gaps, and human decisions are reported.
+- `ARCHITECTURE ANALYSIS BLOCKED` — missing access, artifacts, tooling, or evidence prevents the requested analysis from being completed.
+- `NEEDS HUMAN DECISION` — unresolved scope, approval, or a consequential choice prevents further work.
+
+An analysis may finish by identifying unknowns or decisions when that was the requested output. Completion does not imply approval of those decisions, a defect-free product, or authorization to implement. If a missing input prevents the requested output, use the blocked or decision status instead.

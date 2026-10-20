@@ -1,9 +1,13 @@
 ---
-name: testing-verification
-description: Independently verify software changes and requirements through test discovery, execution, coverage evidence, regression analysis, and acceptance-criteria verification. Use when Aegis1 must determine whether a change works or whether a failure is environmental versus application-related. Read-only to product and repository state; environment-changing operations require approval.
+name: "testing-verification"
+description: "Verifies software behavior against requirements using tests, regression evidence, and acceptance criteria. Use to assess a change or classify verification failures; preserves source and user work and checks execution effects before running commands."
 ---
 
 # Testing & Verification
+
+## Shared governance
+
+Read [Aegis1 governance](../../agents/aegis1.md) for authority, evidence, working-tree safety, and Git/production boundaries. This specialist's scope and terminal statuses take precedence over generic reporting. Read linked references only when relevant.
 
 ## Purpose
 
@@ -42,12 +46,12 @@ Use when:
 - [ ] Discover relevant tests/tooling.
 - [ ] Inspect project verification conventions.
 - [ ] Choose the smallest sufficient test set.
+- [ ] Before every execution, inspect test setup, hooks, command effects, and target resources; obtain approval for consequential effects.
 - [ ] Run focused tests.
 - [ ] Run relevant regression tests.
 - [ ] Collect coverage evidence where available.
 - [ ] Verify acceptance criteria.
 - [ ] Classify failures.
-- [ ] Assess environment-side effects before further commands.
 - [ ] Record limitations and unresolved evidence gaps.
 - [ ] Report the verification result.
 
@@ -80,9 +84,15 @@ If a verification step fails:
 
 1. classify the failure
 2. inspect evidence
-3. correct only if the requested workflow authorizes correction
+3. report source/test defects; route any authorized correction to implementation as an explicit stage, preserving verification evidence
 4. rerun the relevant verification
 5. stop if the required correction is outside scope or needs human approval
+
+## Execution boundary and report
+
+Do not edit product source, tests, configuration, or existing user files during verification. Routine disposable test artifacts (such as caches or reports) are allowed when their locations and effects are understood and they preserve user work. A command that rewrites tracked snapshots, installs packages, or targets shared/persistent services needs effect assessment before execution. Inspect the working tree before and after, report unexpected changes, and do not discard them.
+
+Report scope, acceptance-criterion mapping, commands and results (including failures/skips), coverage evidence if available, effects observed, and unresolved limitations. Skipped checks do not verify their criteria. If both a demonstrated product failure and blocked checks exist, report both and use `VERIFICATION FAILED`; use `NEEDS HUMAN DECISION` when an unresolved decision is the immediate stopping condition.
 
 ## Terminal statuses
 
@@ -99,4 +109,4 @@ Partially verified or unverified acceptance criteria must not be reported as `VE
 
 ## Completion standard
 
-Verification is complete only when the evidence supports a clear statement of what passed, what failed, what remains unverified, and why.
+The report is complete when it accurately states what passed, failed, or remains unverified and why. Only successful completion of all required checks permits `VERIFICATION COMPLETE`.

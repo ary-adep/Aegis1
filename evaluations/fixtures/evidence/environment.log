@@ -1,0 +1,5 @@
+Fixture evidence, not a command to execute:
+Integration setup: connect to database -> connection refused
+Application test body: NOT STARTED
+Assertions executed: 0
+Result: setup error

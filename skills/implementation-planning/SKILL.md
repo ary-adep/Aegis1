@@ -1,9 +1,13 @@
 ---
-name: implementation-planning
-description: Create evidence-based implementation plans from approved requirements and known architecture, identifying affected components, files, interfaces, data changes, sequencing, tests, risks, and verification before code changes.
+name: "implementation-planning"
+description: "Creates evidence-based implementation plans from understood requirements and established architectural direction. Use to map changes, dependencies, risks, and verification before editing code."
 ---
 
 # Implementation Planning
+
+## Shared governance
+
+Read [Aegis1 governance](../../agents/aegis1.md) for authority, evidence, working-tree safety, and Git/production boundaries. This specialist's scope and terminal statuses take precedence over generic reporting. Read linked references only when relevant.
 
 ## Purpose
 
@@ -85,8 +89,12 @@ Produce:
 10. Risks and human decisions.
 11. Definition of done.
 
-## Terminal status
+## Terminal statuses
 
-End with exactly:
+End the report with exactly one status line:
 
-`IMPLEMENTATION PLAN COMPLETE`
+- `IMPLEMENTATION PLAN COMPLETE` — each material requirement has an implementation and verification mapping and no unresolved prerequisite prevents execution.
+- `IMPLEMENTATION PLAN BLOCKED` — missing access, artifacts, tooling, or evidence prevents the requested analysis from being completed.
+- `NEEDS HUMAN DECISION` — unresolved scope, approval, or a consequential choice prevents further work.
+
+An analysis may finish by identifying unknowns or decisions when that was the requested output. Completion does not imply approval of those decisions, a defect-free product, or authorization to implement. If a missing input prevents the requested output, use the blocked or decision status instead.

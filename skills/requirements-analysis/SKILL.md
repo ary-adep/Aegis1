@@ -1,9 +1,13 @@
 ---
-name: requirements-analysis
-description: Analyze software requirements, clarify scope and behavior, identify ambiguity, define acceptance criteria, and establish requirement traceability before design or implementation. Use when business or technical intent is incomplete, inconsistent, or needs to become testable.
+name: "requirements-analysis"
+description: "Analyzes software requirements, ambiguity, acceptance criteria, and traceability. Use when intent is incomplete, inconsistent, or needs testable definition before design or implementation."
 ---
 
 # Requirements Analysis
+
+## Shared governance
+
+Read [Aegis1 governance](../../agents/aegis1.md) for authority, evidence, working-tree safety, and Git/production boundaries. This specialist's scope and terminal statuses take precedence over generic reporting. Read linked references only when relevant.
 
 ## Purpose
 
@@ -47,6 +51,7 @@ Use when requirements need to be:
 - [ ] Write testable acceptance criteria.
 - [ ] Build requirement-to-acceptance traceability.
 - [ ] Separate in-scope from out-of-scope behavior.
+- [ ] Cross-check each material criterion against its source requirement; remove invented targets and flag unresolved contradictions.
 
 ## Requirements detail
 
@@ -89,8 +94,12 @@ Report:
 12. Unknowns.
 13. Human decisions required.
 
-## Terminal status
+## Terminal statuses
 
-End with exactly:
+End the report with exactly one status line:
 
-`REQUIREMENTS ANALYSIS COMPLETE`
+- `REQUIREMENTS ANALYSIS COMPLETE` — the requested analysis and traceability are finished, with unresolved business decisions recorded.
+- `REQUIREMENTS ANALYSIS BLOCKED` — missing access, artifacts, tooling, or evidence prevents the requested analysis from being completed.
+- `NEEDS HUMAN DECISION` — unresolved scope, approval, or a consequential choice prevents further work.
+
+An analysis may finish by identifying unknowns or decisions when that was the requested output. Completion does not imply approval of those decisions, a defect-free product, or authorization to implement. If a missing input prevents the requested output, use the blocked or decision status instead.

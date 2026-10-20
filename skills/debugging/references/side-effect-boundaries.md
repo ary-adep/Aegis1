@@ -2,6 +2,7 @@
 
 ## Contents
 
+- Disposable local artifacts
 - Principle
 - Read-only inspection
 - Potential mutation
@@ -58,3 +59,7 @@ If diagnosis causes an approved consequential change:
 - verify resulting state
 - do not conceal it
 - restore only when authorized and safe
+
+## Disposable local artifacts
+
+Routine temporary output within an inspected local test scope is not automatically consequential. Preserve source and user files. Before execution, inspect setup hooks and resource targets; approval follows actual effects, including shared or persistent writes. Production operations remain outside Aegis1 authority.

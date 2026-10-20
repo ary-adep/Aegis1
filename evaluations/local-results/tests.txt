@@ -1,0 +1,30 @@
+test_boolean_string_is_rejected (test_validation.DistributionChecks.test_boolean_string_is_rejected) ... ok
+test_broken_reference_is_detected (test_validation.DistributionChecks.test_broken_reference_is_detected) ... ok
+test_distribution_is_structurally_valid (test_validation.DistributionChecks.test_distribution_is_structurally_valid) ... ok
+test_duplicate_frontmatter_is_rejected (test_validation.DistributionChecks.test_duplicate_frontmatter_is_rejected) ... ok
+test_long_reference_needs_contents (test_validation.DistributionChecks.test_long_reference_needs_contents) ... ok
+test_missing_agent_is_detected (test_validation.DistributionChecks.test_missing_agent_is_detected) ... ok
+test_orphan_reference_is_detected (test_validation.DistributionChecks.test_orphan_reference_is_detected) ... ok
+test_traversal_link_is_rejected (test_validation.DistributionChecks.test_traversal_link_is_rejected) ... ok
+test_truncated_frontmatter_is_rejected (test_validation.DistributionChecks.test_truncated_frontmatter_is_rejected) ... ok
+test_baseline_fixture_passes_all_five_tests (test_validation.EvaluationChecks.test_baseline_fixture_passes_all_five_tests) ... ok
+test_bug_fixture_fails_at_full_stock (test_validation.EvaluationChecks.test_bug_fixture_fails_at_full_stock) ... ok
+test_complete_record_format_is_accepted (test_validation.EvaluationChecks.test_complete_record_format_is_accepted) ... ok
+test_every_packet_prepares_without_expected_answers_in_task (test_validation.EvaluationChecks.test_every_packet_prepares_without_expected_answers_in_task) ... ok
+test_every_specialist_and_orchestrator_has_three_categories (test_validation.EvaluationChecks.test_every_specialist_and_orchestrator_has_three_categories) ... ok
+test_evidence_path_cannot_escape (test_validation.EvaluationChecks.test_evidence_path_cannot_escape) ... ok
+test_existing_destination_is_preserved (test_validation.EvaluationChecks.test_existing_destination_is_preserved) ... ok
+test_missing_or_escaping_evidence_is_rejected (test_validation.EvaluationChecks.test_missing_or_escaping_evidence_is_rejected) ... ok
+test_pass_with_failed_criterion_is_rejected (test_validation.EvaluationChecks.test_pass_with_failed_criterion_is_rejected) ... ok
+test_pass_with_wrong_status_is_rejected (test_validation.EvaluationChecks.test_pass_with_wrong_status_is_rejected) ... ok
+test_pass_without_evidence_is_rejected (test_validation.EvaluationChecks.test_pass_without_evidence_is_rejected) ... ok
+test_pass_without_execution_is_rejected (test_validation.EvaluationChecks.test_pass_without_execution_is_rejected) ... ok
+test_preparation_cannot_write_into_distribution (test_validation.EvaluationChecks.test_preparation_cannot_write_into_distribution) ... ok
+test_removed_grading_criterion_is_rejected (test_validation.EvaluationChecks.test_removed_grading_criterion_is_rejected) ... ok
+test_skipped_fixture_has_zero_exit_but_no_acceptance_execution (test_validation.EvaluationChecks.test_skipped_fixture_has_zero_exit_but_no_acceptance_execution) ... ok
+test_valid_unrun_template_does_not_claim_success (test_validation.EvaluationChecks.test_valid_unrun_template_does_not_claim_success) ... ok
+
+----------------------------------------------------------------------
+Ran 25 tests in 6.172s
+
+OK

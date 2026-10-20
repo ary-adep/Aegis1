@@ -1,9 +1,13 @@
 ---
-name: debugging
-description: Investigate software failures using evidence-based reproduction, tracing, hypothesis testing, root-cause analysis, and verification. Use when behavior fails, tests fail, errors occur, or application versus environment/tooling responsibility must be established. Diagnosis is read-only unless an approved implementation workflow is requested.
+name: "debugging"
+description: "Investigates software failures through reproduction, tracing, and hypothesis testing. Use to establish root cause or distinguish application failures from environment, tooling, dependency, or data failures; diagnosis does not silently apply fixes."
 ---
 
 # Debugging / Root Cause Analysis
+
+## Shared governance
+
+Read [Aegis1 governance](../../agents/aegis1.md) for authority, evidence, working-tree safety, and Git/production boundaries. This specialist's scope and terminal statuses take precedence over generic reporting. Read linked references only when relevant.
 
 ## Purpose
 
@@ -26,7 +30,8 @@ Determine the most likely root cause of a software failure using evidence rather
 
 - [ ] Capture expected vs actual behavior.
 - [ ] Capture exact error/log/stack trace.
-- [ ] Reproduce safely when practical.
+- [ ] Inspect reproduction commands, setup hooks, and target resources for effects before execution.
+- [ ] Reproduce safely when practical; keep disposable artifacts isolated and preserve user work.
 - [ ] Localize the failing path.
 - [ ] Inspect recent relevant changes.
 - [ ] Form explicit hypotheses.
@@ -75,6 +80,8 @@ If evidence is insufficient, say so.
 
 Use exactly one:
 
-- `ROOT CAUSE IDENTIFIED`
-- `ROOT CAUSE NOT CONFIRMED`
-- `DEBUGGING BLOCKED`
+- `ROOT CAUSE IDENTIFIED` — evidence establishes the causal mechanism and relevant alternatives have been checked.
+- `ROOT CAUSE NOT CONFIRMED` — available evidence was investigated but does not establish a root cause.
+- `DEBUGGING BLOCKED` — access, tooling, required evidence, or an unresolved approval/decision prevents the investigation.
+
+Place exactly one of these on the final line. For a blocked investigation, state the missing evidence or exact human decision in the report. A suggested fix or an untested hypothesis alone does not establish root cause.

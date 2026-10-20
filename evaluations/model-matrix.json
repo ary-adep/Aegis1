@@ -1,0 +1,9 @@
+{
+  "status": "NOT_CONFIGURED",
+  "intended_models": [],
+  "runs": [],
+  "installation_smoke_tests": [],
+  "working_tree_integration_runs": [],
+  "real_work_observations": [],
+  "reason": "The intended Claude models were not specified and no Claude runtime was found on this session's command path. No model behavior is claimed as validated."
+}

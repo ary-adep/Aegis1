@@ -43,6 +43,8 @@ Review only the requested change and necessary context.
 
 Do not turn a focused review into an unrelated architecture audit.
 
+For documentation, identify a concrete incorrect or missing statement rather than imposing a preferred template. Missing evidence is not proof that an event never occurred. Separate requirement violations from unspecified behavior and optional improvements. Match claims to the level tested: converter checks, HTTP responses, and persistence observations establish different things.
+
 ## Recommendations
 
 Recommendations should address the identified problem.

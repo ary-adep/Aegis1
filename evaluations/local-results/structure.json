@@ -1,0 +1,47 @@
+{
+  "passed": true,
+  "errors": [],
+  "inventory": [
+    {
+      "file": "skills/aegis/SKILL.md",
+      "body_lines": 70
+    },
+    {
+      "file": "skills/architecture-analysis/SKILL.md",
+      "body_lines": 108
+    },
+    {
+      "file": "skills/code-review/SKILL.md",
+      "body_lines": 89
+    },
+    {
+      "file": "skills/debugging/SKILL.md",
+      "body_lines": 83
+    },
+    {
+      "file": "skills/implementation/SKILL.md",
+      "body_lines": 132
+    },
+    {
+      "file": "skills/implementation-planning/SKILL.md",
+      "body_lines": 96
+    },
+    {
+      "file": "skills/requirements-analysis/SKILL.md",
+      "body_lines": 101
+    },
+    {
+      "file": "skills/system-discovery/SKILL.md",
+      "body_lines": 86
+    },
+    {
+      "file": "skills/testing-verification/SKILL.md",
+      "body_lines": 108
+    },
+    {
+      "file": "agents/aegis1.md",
+      "body_lines": 228
+    }
+  ],
+  "limitation": "Static structure only; no Claude model or loader was executed."
+}

@@ -1,11 +1,17 @@
 ---
-name: implementation
-description: Execute an understood and appropriately approved software change with controlled scope, minimal edits, tests, verification, coverage evidence, and diff review. Use only when the target repository and implementation direction are sufficiently understood.
-argument-hint: <approved implementation task>
-context: fork
+name: "implementation"
+description: "Implements an understood and appropriately authorized software change with controlled scope, verification, and diff review. Use when the target repository, expected behavior, and consequential decisions are established."
+argument-hint: "<approved implementation task>"
+context: "fork"
+agent: "aegis1"
+background: false
 ---
 
 # Aegis1 Implementation
+
+## Shared governance
+
+Read [Aegis1 governance](../../agents/aegis1.md) for authority, evidence, working-tree safety, and Git/production boundaries. This specialist's scope and terminal statuses take precedence over generic reporting. Read linked references only when relevant.
 
 ## Purpose
 
@@ -65,6 +71,7 @@ The human owns Git handoff and production activity.
 - [ ] Confirm implementation boundary.
 - [ ] Identify existing patterns to reuse.
 - [ ] Make the smallest coherent change.
+- [ ] Inspect command effects, hooks, test setup, and target resources before running verification; obtain approval for consequential changes.
 - [ ] Run focused tests.
 - [ ] Run relevant broader regression tests.
 - [ ] Obtain coverage evidence when tooling supports it.
@@ -76,6 +83,8 @@ The human owns Git handoff and production activity.
 For safety and side-effect classification use [implementation-safety.md](references/implementation-safety.md).
 
 For common change categories use [change-types.md](references/change-types.md).
+
+When creating or revising engineering documentation, read [documentation.md](references/documentation.md). Apply its artifact checks instead of automatically running code tests for prose-only changes.
 
 For verification and coverage expectations use [verification.md](references/verification.md).
 
@@ -106,20 +115,27 @@ Use these where ambiguity matters:
 
 Use exactly one:
 
-- `IMPLEMENTATION COMPLETE`
-- `IMPLEMENTATION BLOCKED`
-- `IMPLEMENTATION FAILED VERIFICATION`
-- `NEEDS HUMAN DECISION`
+- `IMPLEMENTATION COMPLETE` — changes are present and every required acceptance/verification check has passed.
+- `IMPLEMENTATION BLOCKED` — access, tooling, environment, or missing evidence prevents implementation or required verification.
+- `IMPLEMENTATION FAILED VERIFICATION` — an executed required check demonstrates a product/test failure that remains unresolved.
+- `NEEDS HUMAN DECISION` — a consequential decision or necessary approval is unresolved.
+- `CONFLICTING WORKING-TREE CHANGE` — an overlapping existing edit cannot safely be attributed or preserved.
+
+Use the conflict status before any overlapping edit. For other outcomes report all known failures and blockers, then choose the status describing why work must stop: unresolved human decision, demonstrated verification failure, missing required evidence, or completion. The final line contains only the chosen status.
 
 Never substitute generic approval language.
+
+## Verification feedback loop
+
+When a required check fails, classify the cause from evidence. Correct a confirmed issue only within the authorized scope, rerun the affected check and relevant regression checks, and inspect the final diff. If no new evidence or safe corrective step remains, report the failure or blocker rather than repeating the same command or claiming success.
 
 ## Completion
 
 Implementation is complete only when:
 
-- intended code changes are present
-- acceptance criteria are addressed
-- tests/verification have been attempted appropriately
+- intended code or documentation changes are present in the final artifacts
+- each required acceptance criterion is supported by verification evidence
+- required tests/verification have completed successfully, with actual results recorded; unavailable checks are blockers, not passes
 - coverage evidence is reported when available
 - diff is reviewed
 - unrelated changes are preserved
