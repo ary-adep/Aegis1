@@ -118,9 +118,50 @@ try {
         $conflicts += $agentDestination
     }
     if ($conflicts.Count) {
-        Log 'No installation changes made. Existing destinations need review:'
-        $conflicts | ForEach-Object { Log "  $_" }
-        throw 'Compare and back up existing copies or links before retrying. Nothing is overwritten automatically.'
+        # Move only named Aegis entries; never traverse or delete link targets.
+        # Keep backups on the same volume and outside Claude's discovery folders.
+        $backupBase = Join-Path $env:USERPROFILE 'Aegis-install-backups'
+        foreach ($parent in @($globalRoot, $skillRoot, $agentRoot, $backupBase)) {
+            $parentEntry = Find-Entry $parent
+            if ($parentEntry -and ($parentEntry.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                throw "Refusing backup through a redirected parent directory: $parent"
+            }
+        }
+        $backup = Join-Path $backupBase ([DateTime]::Now.ToString('yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0,8))
+        New-Item -ItemType Directory -Path $backup | Out-Null
+        Log "Backup directory: $backup"
+        foreach ($destination in $conflicts) {
+            $absolute = [IO.Path]::GetFullPath($destination)
+            $parent = [IO.Path]::GetDirectoryName($absolute)
+            $name = [IO.Path]::GetFileName($absolute)
+            if ($parent -ieq [IO.Path]::GetFullPath($skillRoot) -and $skillNames -contains $name) {
+                $category = 'skills'
+            } elseif ($absolute -ieq [IO.Path]::GetFullPath($agentDestination)) {
+                $category = 'agents'
+            } else { throw "Unexpected backup source: $absolute" }
+            if ($repo.TrimEnd('\') -ieq $absolute -or $repo.StartsWith($absolute + '\', [StringComparison]::OrdinalIgnoreCase)) {
+                throw 'Repository is inside a destination being replaced; relocate the clone first.'
+            }
+            $backupFolder = Join-Path $backup $category
+            New-Item -ItemType Directory -Path $backupFolder -Force | Out-Null
+            $saved = [IO.Path]::GetFullPath((Join-Path $backupFolder $name))
+            if (-not $saved.StartsWith([IO.Path]::GetFullPath($backup) + '\', [StringComparison]::OrdinalIgnoreCase)) {
+                throw 'Backup destination escaped its intended directory.'
+            }
+            if (Find-Entry $saved) { throw "Backup already exists: $saved" }
+            Log "Backing up: $absolute -> $saved"
+            Move-Item -LiteralPath $absolute -Destination $saved -ErrorAction Stop
+            if ((Find-Entry $absolute) -or -not (Find-Entry $saved)) {
+                throw "Backup verification failed: $absolute"
+            }
+            Log "Backup preserved: $saved"
+        }
+        foreach ($item in $plan) { $item.Exists = [bool](Find-Entry $item.Destination) }
+        if ($conflicts -contains $agentDestination) {
+            $agentLinked = $false
+            $agentIdentical = $false
+        }
+        Log 'Existing customizations are in the backup; they are not merged into the new installation.'
     }
 
     New-Item -ItemType Directory -Path $skillRoot -Force | Out-Null
