@@ -26,7 +26,7 @@ case "$(uname -s)" in
     MINGW*|MSYS*) ;;
     *) printf 'This installer requires Git Bash on Windows.\n' >&2; exit 1 ;;
 esac
-for required in powershell.exe cygpath iconv base64 tee; do
+for required in powershell.exe cygpath tee; do
     command -v "$required" >/dev/null || {
         printf 'Required command not found: %s\n' "$required" >&2; exit 1;
     }
@@ -43,7 +43,7 @@ log_file="$(mktemp "$log_root/install-$(date +%Y%m%d-%H%M%S)-XXXXXX.log")"
     printf 'Close active Claude sessions before installation.\n'
 } | tee -a "$log_file"
 
-# Encode the complete script so PowerShell executes one block, not interactive stdin.
+# Read the complete script as data before executing one PowerShell block.
 # The repository path is environment data, never interpolated into executable source.
 ps_source=$(cat <<'POWERSHELL'
 $ErrorActionPreference = 'Stop'
@@ -174,13 +174,19 @@ try {
 }
 POWERSHELL
 )
-encoded="$(printf '%s' "$ps_source" | iconv -f UTF-8 -t UTF-16LE | base64 | tr -d '\r\n')"
 set +e
-MSYS_NO_PATHCONV=1 powershell.exe -NoProfile -NonInteractive -OutputFormat Text -EncodedCommand "$encoded" 2>&1 | tee -a "$log_file"
+printf '%s' "$ps_source" | MSYS_NO_PATHCONV=1 powershell.exe -NoProfile -NonInteractive -OutputFormat Text -Command '$source = [Console]::In.ReadToEnd(); & ([scriptblock]::Create($source))' 2>&1 | tee -a "$log_file"
 results=("${PIPESTATUS[@]}")
 set -e
-if (( results[1] != 0 )); then
+if (( results[2] != 0 )); then
     printf 'ERROR: Could not write the complete installation log.\n' >&2
     exit 1
 fi
-exit "${results[0]}"
+if (( results[1] != 0 )); then
+    exit "${results[1]}"
+fi
+if (( results[0] != 0 )); then
+    printf 'ERROR: Could not deliver the installation script to PowerShell.\n' >&2
+    exit 1
+fi
+exit 0
