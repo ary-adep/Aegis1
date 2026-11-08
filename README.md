@@ -151,8 +151,8 @@ verified entry-point finding and name its source file. In a fresh session in
 the same project, ask it to recall that finding.
 
 Records live in `~/.aegis1/memory.sqlite3`. The helper scopes them to the
-resolved project path and marks a record stale if its source file changes or
-disappears. Memory is local to this laptop and saves only explicit findings.
+resolved project path. A finding can cite several source files, and recall
+marks it stale if any cited file changes or disappears. Memory is local to this laptop and saves only explicit findings.
 
 ## Read-only Claude Code scout
 
