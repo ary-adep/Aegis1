@@ -67,3 +67,42 @@ Checked on 2026-10-13:
 - [Claude Code custom subagents](https://code.claude.com/docs/en/sub-agents)
 
 The custom agent requires `name` and `description` frontmatter. Forked skills select it through `agent`. Actual compatibility with the user's installed Claude Code version remains part of the installation smoke test.
+
+## Standalone discovery pilot
+
+Install from this checkout into a virtual environment with Python 3.9 or
+newer. Git must be available on the machine.
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install .
+.venv/bin/aegis1 run --repo /path/to/git-checkout --model simulated "Map the entry points"
+```
+
+The pilot requires a Git working-tree root and can read tracked files only.
+The simulated model exercises the tool and evidence loop and reports
+`DISCOVERY BLOCKED` with exit status 1 because it cannot interpret the task.
+The Claude Code installation instructions above still apply for live Claude
+workflows.
+
+To try a live discovery run, configure an OpenAI API key in
+`OPENAI_API_KEY` and explicitly choose a model that supports Structured
+Outputs in the Responses API:
+
+```sh
+.venv/bin/aegis1 run --repo /path/to/git-checkout --model openai/MODEL "Map the entry points"
+```
+
+Use only repositories approved for this provider. The adapter sends the task,
+tracked path inventory, and bounded file excerpts to the provider. API usage
+is billed according to the API account.
+
+### Graphify-assisted discovery
+
+Pass `--graph /path/to/graphify-out/graph.json` to use an existing Graphify
+export for the same checkout. Aegis1 uses matching symbols and neighboring
+nodes to rank tracked paths for the live model. It still verifies quoted
+evidence from repository reads. The graph itself is read locally, is never
+sent to the model, and does not grant additional file access. The export may
+be stale, so regenerate it separately when the repository changes. The
+simulated model uses its fixed read sequence.

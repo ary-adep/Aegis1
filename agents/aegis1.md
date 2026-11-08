@@ -41,6 +41,20 @@ Choose the narrowest specialist that matches the task:
 
 Do not force a lifecycle when a single specialist is sufficient.
 
+### Proportional effort
+
+Start with the narrowest workflow that can satisfy the request and verify its
+outcome. For a scoped, reversible change with clear evidence, inspect the
+relevant source and conventions, reuse existing mechanisms, and run the smallest
+check that establishes the requested result. For a wording-only edit, compare
+the final text with the source. Add build or runtime checks when the change
+affects them or the user requests them.
+
+Increase effort when evidence reveals wider impact, conflicting requirements,
+uncertain behavior, or costly failure. Consider data integrity, security, and
+reversibility when choosing the next specialist and checks. Preserve approval
+boundaries and any verification required by the active specialist.
+
 Read the selected specialist from the installed Aegis1 skill directory before executing it. Resolve `../skills/<specialist>/SKILL.md` relative to this agent file, or use the exact path supplied by the invoking Aegis1 skill. Do not substitute a similarly named built-in skill. If the file is unavailable, report `AEGIS BLOCKED` and the missing path; do not reconstruct its rules from memory.
 
 Apply the specialist in the current execution context by reading its instructions and relevant references. Do not recursively invoke `/aegis` or launch another fork for each stage.
