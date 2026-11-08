@@ -1,8 +1,13 @@
 """Install Aegis1 into a Claude Code project or personal configuration."""
 
 import argparse
+from hashlib import sha256
+import json
 from pathlib import Path
+from shutil import copy2
+from tempfile import NamedTemporaryFile, mkdtemp
 
+INSTALL_VERSION = "0.2.0"
 SOURCE = Path(__file__).resolve().parent
 SKILLS = (
     "aegis", "architecture-analysis", "code-review", "debugging",
@@ -11,8 +16,21 @@ SKILLS = (
 )
 
 
-def install(target: Path) -> int:
-    paths = [Path("agents/aegis1.md")]
+def replace_file(destination: Path, content: bytes) -> None:
+    with NamedTemporaryFile(dir=destination.parent, delete=False) as output:
+        temporary = Path(output.name)
+        try:
+            output.write(content)
+            output.close()
+            temporary.replace(destination)
+        finally:
+            output.close()
+            temporary.unlink(missing_ok=True)
+
+
+def install(target: Path, previous: Path = None) -> tuple[int, int]:
+    paths = [Path("agents/aegis1.md"), Path("agents/aegis1-scout.md"),
+             Path("skills/aegis/memory.py")]
     for skill in SKILLS:
         folder = SOURCE / "skills" / skill
         if not (folder / "SKILL.md").is_file():
@@ -22,38 +40,104 @@ def install(target: Path) -> int:
             if path.is_file()
         )
 
+    manifest = target / ".aegis1-install.json"
+    if manifest.resolve() != manifest:
+        raise ValueError(f"Redirected install path: {manifest}")
+    recorded = {}
+    prior_manifest = manifest.read_bytes() if manifest.exists() else None
+    if prior_manifest is not None:
+        state = json.loads(prior_manifest)
+        if (not isinstance(state, dict) or state.get("schema") != 1
+                or not isinstance(state.get("files"), dict)
+                or not isinstance(state.get("version"), str)):
+            raise ValueError(f"Invalid installer manifest: {manifest}")
+        installed_version = tuple(int(part) for part in state["version"].split("."))
+        if installed_version > tuple(int(part) for part in INSTALL_VERSION.split(".")):
+            raise ValueError(f"Installed version {state['version']} is newer than {INSTALL_VERSION}")
+        recorded = state["files"]
+
+    fingerprints = {}
     pending = {}
+    replacements = {}
     for relative in paths:
         source = SOURCE / relative
         destination = target / relative
         if source.resolve() != source or destination.resolve() != destination:
             raise ValueError(f"Redirected install path: {relative}")
         content = source.read_bytes()
-        if destination.exists():
-            if not destination.is_file() or destination.read_bytes() != content:
-                raise ValueError(f"Existing file differs: {destination}")
-        else:
+        key = relative.as_posix()
+        fingerprints[key] = sha256(content).hexdigest()
+        if not destination.exists():
             pending[destination] = content
+            continue
+        if not destination.is_file():
+            raise ValueError(f"Expected a file: {destination}")
+        installed = destination.read_bytes()
+        if installed == content:
+            continue
+        original = previous / relative if previous is not None else None
+        if key in recorded:
+            matches_previous = recorded[key] == sha256(installed).hexdigest()
+        else:
+            matches_previous = (
+                original is not None and original.resolve() == original and original.is_file()
+                and original.read_bytes().replace(b"\r\n", b"\n") == installed.replace(b"\r\n", b"\n")
+            )
+        if not matches_previous:
+            raise ValueError(f"Existing file differs from the expected version: {destination}")
+        replacements[destination] = (installed, content)
+
+    backup = None
+    if replacements:
+        backup_root = Path.home() / ".aegis1" / "install-backups"
+        backup_root.mkdir(parents=True, mode=0o700, exist_ok=True)
+        backup = Path(mkdtemp(prefix="upgrade-", dir=backup_root))
+        for destination, (installed, _) in replacements.items():
+            saved = backup / destination.relative_to(target)
+            saved.parent.mkdir(parents=True, exist_ok=True)
+            copy2(destination, saved)
+            if saved.read_bytes() != installed:
+                raise ValueError(f"Installed file changed during backup: {destination}")
+        if prior_manifest is not None:
+            (backup / manifest.name).write_bytes(prior_manifest)
+        print(f"Backed up replaced files to {backup}", flush=True)
 
     created = []
+    replaced = []
     try:
         for destination, content in pending.items():
             destination.parent.mkdir(parents=True, exist_ok=True)
             with destination.open("xb") as output:
                 created.append(destination)
                 output.write(content)
-    except OSError:
+        for destination, (installed, content) in replacements.items():
+            if destination.resolve() != destination or destination.read_bytes() != installed:
+                raise ValueError(f"Installed file changed during upgrade: {destination}")
+            replace_file(destination, content)
+            replaced.append(destination)
+        next_manifest = (json.dumps({"schema": 1, "version": INSTALL_VERSION, "files": fingerprints},
+                                    indent=2, sort_keys=True) + "\n").encode("utf-8")
+        if next_manifest != prior_manifest:
+            current_manifest = manifest.read_bytes() if manifest.exists() else None
+            if manifest.resolve() != manifest or current_manifest != prior_manifest:
+                raise ValueError(f"Installer manifest changed during upgrade: {manifest}")
+            replace_file(manifest, next_manifest)
+    except (OSError, ValueError):
+        for destination in reversed(replaced):
+            replace_file(destination, (backup / destination.relative_to(target)).read_bytes())
         for destination in reversed(created):
             destination.unlink(missing_ok=True)
         raise
-    return len(created)
+    return len(created), len(replaced)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--version", action="version", version=f"Aegis1 installer {INSTALL_VERSION}")
     scope = parser.add_mutually_exclusive_group(required=True)
     scope.add_argument("--project", type=Path, help="Existing project directory")
     scope.add_argument("--personal", action="store_true", help="Install under your home directory")
+    parser.add_argument("--upgrade-from", type=Path, help="Checkout matching the installed version")
     args = parser.parse_args()
 
     try:
@@ -61,11 +145,14 @@ def main() -> int:
         if not root.is_dir():
             raise ValueError(f"Expected a directory: {root}")
         target = root / ".claude"
-        count = install(target)
+        previous = args.upgrade_from.resolve(strict=True) if args.upgrade_from else None
+        if previous is not None and not (previous / "agents/aegis1.md").is_file():
+            raise ValueError("--upgrade-from must point to a prior Aegis1 checkout")
+        added, updated = install(target, previous)
     except (OSError, ValueError, RuntimeError) as error:
         parser.exit(1, f"Installation stopped: {error}\n")
 
-    print(f"Installed {count} new files in {target}. Restart Claude Code and run /aegis.")
+    print(f"Aegis1 {INSTALL_VERSION}: installed {added} new and updated {updated} files in {target}. Restart Claude Code and run /aegis.")
     return 0
 
 

@@ -53,7 +53,7 @@ def validate(root):
     def error(path, message):
         errors.append(f'{Path(path).relative_to(root).as_posix()}: {message}')
 
-    required = [root / 'agents/aegis1.md'] + [root / f'skills/{n}/SKILL.md' for n in ('aegis', *SPECIALISTS)]
+    required = [root / 'agents/aegis1.md', root / 'agents/aegis1-scout.md'] + [root / f'skills/{n}/SKILL.md' for n in ('aegis', *SPECIALISTS)]
     for path in required:
         if not path.is_file():
             error(path, 'required file missing')
@@ -66,6 +66,10 @@ def validate(root):
             continue
         is_skill = path.name == 'SKILL.md'
         allowed = SKILL_FIELDS if is_skill else {'name', 'description'}
+        if path == root / 'agents/aegis1-scout.md':
+            allowed |= {'model', 'tools'}
+            if fields.get('model') != 'inherit' or fields.get('tools') != 'Read, Glob, Grep':
+                error(path, 'scout must inherit the model and use only Read, Glob, and Grep')
         if set(fields) - allowed:
             error(path, f'unsupported fields in this distribution: {sorted(set(fields) - allowed)}')
         name = fields.get('name')

@@ -57,7 +57,7 @@ boundaries and any verification required by the active specialist.
 
 Read the selected specialist from the installed Aegis1 skill directory before executing it. Resolve `../skills/<specialist>/SKILL.md` relative to this agent file, or use the exact path supplied by the invoking Aegis1 skill. Do not substitute a similarly named built-in skill. If the file is unavailable, report `AEGIS BLOCKED` and the missing path; do not reconstruct its rules from memory.
 
-Apply the specialist in the current execution context by reading its instructions and relevant references. Do not recursively invoke `/aegis` or launch another fork for each stage.
+Apply the specialist in the current execution context by reading its instructions and relevant references. Do not recursively invoke `/aegis` or fork each stage. The orchestrator may delegate a bounded read-only investigation to the Aegis1 scout; verify consequential findings in the main context.
 
 For an explicitly authorized task spanning several stages, carry forward the target repository, scope, requirements, evidence paths, decisions already made, existing user changes, verification results, and unresolved blockers. A stage's successful terminal condition ends that stage; continue only to the next stage already within the user's request. Preserve the final active specialist's exact terminal status. Stop the overall workflow at a blocker or unresolved consequential decision.
 

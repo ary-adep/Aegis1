@@ -22,10 +22,24 @@ In Windows PowerShell, use `py -3 install-aegis.py --project "C:\path\to\project
 or `py -3 install-aegis.py --personal`.
 
 The installer copies the nine skills and their Markdown references plus the
-agent definition. An identical install can be repeated. If a destination file
-differs, installation stops before copying files. Review the existing copy and
-back it up before upgrading. The original Windows Git Bash installer remains
-available.
+agent definitions and local memory helper. An identical install can be repeated.
+
+Check the installer version with `python3 install-aegis.py --version`.
+Version 0.2.0 and later record the installed version and file fingerprints in
+`.claude/.aegis1-install.json`. To upgrade a versioned installation, run the
+new installer with the same scope. It only replaces files that match their
+recorded fingerprints and backs them up under `~/.aegis1/install-backups/`.
+
+For an older installation with no version record, keep a checkout of the
+version you installed and use it once to verify the existing files:
+
+```sh
+python3 install-aegis.py --personal --upgrade-from "/path/to/previous/Aegis1"
+```
+
+On Windows use `py -3` in place of `python3`. The installer stops before copying
+if an existing file conflicts. The upgrade path applies to copied files.
+The original Windows Git Bash installer uses junctions and its own backups.
 
 Project scope uses the project's `.claude/` directory. Personal scope uses
 `~/.claude/`. Claude Code supplies the active model and permissions. Start
@@ -42,7 +56,7 @@ a fresh session, confirm `aegis1` appears in `/agents`, and run a read-only
 /testing-verification Verify the change against the supplied acceptance criteria.
 ```
 
-The orchestrator is explicitly invoked. Specialist skills retain normal automatic discovery. The `/aegis` entry point runs inline in the main conversation, reads the governance body, and disables the Agent tool for its invoking turn without granting permissions. Direct `/implementation` retains its existing custom-agent fork and is not covered by this invocation fix. Within Aegis, specialists are read and applied in the current context. `/code-review` may also name a bundled Claude skill; use `/aegis Review ...` and confirm the Aegis specialist path when identity matters.
+The orchestrator is explicitly invoked. Specialist skills retain normal automatic discovery. The `/aegis` entry point runs inline in the main conversation, reads the governance body, and can delegate a bounded read-only investigation to the installed scout when the host permits it. Direct `/implementation` retains its existing custom-agent fork and is not covered by this invocation fix. Within Aegis, specialists are read and applied in the current context. `/code-review` may also name a bundled Claude skill; use `/aegis Review ...` and confirm the Aegis specialist path when identity matters.
 
 Provide the repository, expected behavior, and constraints. Aegis investigates missing technical evidence, reports unknowns, and asks for consequential business or architecture decisions. Approval already supplied for an understood scope remains valid.
 
@@ -120,3 +134,27 @@ evidence from repository reads. The graph itself is read locally, is never
 sent to the model, and does not grant additional file access. The export may
 be stale, so regenerate it separately when the repository changes. The
 simulated model uses its fixed read sequence.
+
+## Local project memory in Claude Code
+
+Use `/aegis` to explicitly remember a verified finding, recall project
+findings, or delete a record by ID. For example, ask Aegis1 to remember a
+verified entry-point finding and name its source file. In a fresh session in
+the same project, ask it to recall that finding.
+
+Records live in `~/.aegis1/memory.sqlite3`. The helper scopes them to the
+resolved project path and marks a record stale if its source file changes or
+disappears. Memory is local to this laptop and saves only explicit findings.
+
+## Read-only Claude Code scout
+
+The Python installer includes the `aegis1-scout` custom subagent. Start a fresh
+Claude Code session and check that it appears in `/agents`. From the regular
+Claude Code conversation, ask:
+
+> Use the aegis1-scout subagent to locate where /aegis selects a specialist.
+> Cite files and lines. Read only within this checkout.
+
+The scout inherits the session model and has Read, Glob, and Grep tools.
+`/aegis` can also select the scout automatically for a scoped investigation. The existing Windows Git Bash installer installs the original agent;
+use the Python installer for the scout.
