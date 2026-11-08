@@ -7,7 +7,7 @@ from pathlib import Path
 from shutil import copy2
 from tempfile import NamedTemporaryFile, mkdtemp
 
-INSTALL_VERSION = "0.2.0"
+INSTALL_VERSION = "0.2.1"
 SOURCE = Path(__file__).resolve().parent
 SKILLS = (
     "aegis", "architecture-analysis", "code-review", "debugging",
@@ -56,6 +56,11 @@ def install(target: Path, previous: Path = None) -> tuple[int, int]:
             raise ValueError(f"Installed version {state['version']} is newer than {INSTALL_VERSION}")
         recorded = state["files"]
 
+    legacy = {}
+    if prior_manifest is None:
+        legacy = json.loads((SOURCE / "legacy-install-fingerprints.json").read_text(
+            encoding="utf-8"))["files"]
+
     fingerprints = {}
     pending = {}
     replacements = {}
@@ -80,8 +85,9 @@ def install(target: Path, previous: Path = None) -> tuple[int, int]:
             matches_previous = recorded[key] == sha256(installed).hexdigest()
         else:
             matches_previous = (
-                original is not None and original.resolve() == original and original.is_file()
-                and original.read_bytes().replace(b"\r\n", b"\n") == installed.replace(b"\r\n", b"\n")
+                legacy.get(key) == sha256(installed.replace(b"\r\n", b"\n")).hexdigest()
+                or (original is not None and original.resolve() == original and original.is_file()
+                    and original.read_bytes().replace(b"\r\n", b"\n") == installed.replace(b"\r\n", b"\n"))
             )
         if not matches_previous:
             raise ValueError(f"Existing file differs from the expected version: {destination}")
@@ -131,6 +137,75 @@ def install(target: Path, previous: Path = None) -> tuple[int, int]:
     return len(created), len(replaced)
 
 
+def migrate_install(target: Path, previous: Path = None) -> tuple[int, int]:
+    """Move recognized legacy link entries aside before copying independent files."""
+    for parent in (target, target / "agents", target / "skills"):
+        if parent.resolve() != parent:
+            raise ValueError(f"Redirected configuration directory: {parent}")
+
+    entries = [target / "agents/aegis1.md"]
+    entries.extend(target / "skills" / skill for skill in SKILLS)
+    linked = [entry for entry in entries if entry.is_symlink() or entry.resolve() != entry]
+    if not linked:
+        return install(target, previous)
+
+    if (target / ".aegis1-install.json").exists():
+        raise ValueError("Found linked files in an already versioned installation")
+    legacy = json.loads((SOURCE / "legacy-install-fingerprints.json").read_text(
+        encoding="utf-8"))["files"]
+    for entry in linked:
+        resolved = entry.resolve(strict=True)
+        relative = entry.relative_to(target)
+        if resolved.is_dir() and relative.parts[0] == "skills":
+            files = [path for path in resolved.rglob("*") if not path.is_dir() or path.is_symlink()]
+            if not (resolved / "SKILL.md").is_file():
+                raise ValueError(f"Missing legacy skill: {entry}")
+            candidates = [(path, relative / path.relative_to(resolved)) for path in files]
+        elif resolved.is_file() and relative.parts[0] == "agents":
+            candidates = [(resolved, relative)]
+        else:
+            raise ValueError(f"Unexpected legacy link: {entry}")
+        for path, name in candidates:
+            if path.resolve() != path or not path.is_file():
+                raise ValueError(f"Unexpected entry in legacy link: {path}")
+            content = path.read_bytes().replace(b"\r\n", b"\n")
+            known = legacy.get(name.as_posix()) == sha256(content).hexdigest()
+            if not known:
+                for checkout in (SOURCE, previous):
+                    original = checkout / name if checkout is not None else None
+                    if original is not None and original.is_file():
+                        if original.read_bytes().replace(b"\r\n", b"\n") == content:
+                            known = True
+                            break
+            if not known:
+                raise ValueError(f"Unrecognized or customized legacy file: {path}")
+
+    backup_root = target / ".aegis1-link-backups"
+    if backup_root.resolve() != backup_root:
+        raise ValueError(f"Redirected backup directory: {backup_root}")
+    backup_root.mkdir(mode=0o700, exist_ok=True)
+    backup = Path(mkdtemp(prefix="migration-", dir=backup_root))
+    moved = []
+    try:
+        for entry in linked:
+            saved = backup / entry.relative_to(target)
+            saved.parent.mkdir(parents=True, exist_ok=True)
+            entry.rename(saved)
+            moved.append((entry, saved))
+        result = install(target, previous)
+    except (OSError, ValueError, RuntimeError):
+        for entry, saved in reversed(moved):
+            if entry.is_dir():
+                for directory in sorted(entry.rglob("*"), key=lambda path: len(path.parts), reverse=True):
+                    if directory.is_dir():
+                        directory.rmdir()
+                entry.rmdir()
+            saved.rename(entry)
+        raise
+    print(f"Backed up legacy link entries to {backup}")
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", action="version", version=f"Aegis1 installer {INSTALL_VERSION}")
@@ -148,7 +223,7 @@ def main() -> int:
         previous = args.upgrade_from.resolve(strict=True) if args.upgrade_from else None
         if previous is not None and not (previous / "agents/aegis1.md").is_file():
             raise ValueError("--upgrade-from must point to a prior Aegis1 checkout")
-        added, updated = install(target, previous)
+        added, updated = migrate_install(target, previous)
     except (OSError, ValueError, RuntimeError) as error:
         parser.exit(1, f"Installation stopped: {error}\n")
 

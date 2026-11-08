@@ -30,16 +30,22 @@ Version 0.2.0 and later record the installed version and file fingerprints in
 new installer with the same scope. It only replaces files that match their
 recorded fingerprints and backs them up under `~/.aegis1/install-backups/`.
 
-For an older installation with no version record, keep a checkout of the
-version you installed and use it once to verify the existing files:
+For an unversioned copy-based install from the original main release
+(`012e406`), run the new installer with the same scope. Version 0.2.1
+recognizes its unchanged files automatically, including Windows line endings.
+For other older versions, use a matching checkout to verify the existing files:
 
 ```sh
 python3 install-aegis.py --personal --upgrade-from "/path/to/previous/Aegis1"
 ```
 
 On Windows use `py -3` in place of `python3`. The installer stops before copying
-if an existing file conflicts. The upgrade path applies to copied files.
-The original Windows Git Bash installer uses junctions and its own backups.
+if an existing file conflicts. The Git Bash wrapper runs the same personal
+installer. Recognized legacy Aegis1 junctions and agent symlinks are moved
+into `.claude/.aegis1-link-backups/` before installing independent copies.
+Their target checkout is preserved. Unrecognized linked contents stop the
+migration. After installation, you can move or remove the source clone.
+To update later, run the installer from a fresh clone of the desired release.
 
 Project scope uses the project's `.claude/` directory. Personal scope uses
 `~/.claude/`. Claude Code supplies the active model and permissions. Start
@@ -156,5 +162,4 @@ Claude Code conversation, ask:
 > Cite files and lines. Read only within this checkout.
 
 The scout inherits the session model and has Read, Glob, and Grep tools.
-`/aegis` can also select the scout automatically for a scoped investigation. The existing Windows Git Bash installer installs the original agent;
-use the Python installer for the scout.
+`/aegis` can also select the scout automatically for a scoped investigation. Both installer entry points include the scout.
