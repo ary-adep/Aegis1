@@ -10,13 +10,27 @@ This is a supervised pilot, not a production-certified developer replacement. It
 
 This repository is the source distribution. Its root `skills/` and `agents/` folders are not automatically project skills merely because Claude Code is launched here.
 
-1. Choose the target project and inspect its existing `.claude/skills/` and `.claude/agents/` directories.
-2. Copy the nine directories inside this repository's `skills/` to the target project's `.claude/skills/` directory, retaining their names and references.
-3. Copy `agents/aegis1.md` to the target project's `.claude/agents/aegis1.md`.
-4. If an existing destination has the same name, compare it before replacement; preserve user customizations. Install the skills and agent from the same version.
-5. Start a fresh Claude Code session in the target project. Confirm `aegis1` appears in `/agents` and the skills are available. Run a read-only discovery smoke test before implementation.
+The installer works with Python 3.9+ on macOS, Linux, and Windows.
+Run it from this checkout and choose one scope:
 
-Personal installation uses the same layout under `~/.claude/`. Choose one installation scope to avoid stale duplicates. Use the full folder contents, not just `SKILL.md`. No settings, tool permissions, model selection, or external connectors are installed by this package.
+```sh
+python3 install-aegis.py --project "/path/to/project"
+python3 install-aegis.py --personal
+```
+
+In Windows PowerShell, use `py -3 install-aegis.py --project "C:\path\to\project"`
+or `py -3 install-aegis.py --personal`.
+
+The installer copies the nine skills and their Markdown references plus the
+agent definition. An identical install can be repeated. If a destination file
+differs, installation stops before copying files. Review the existing copy and
+back it up before upgrading. The original Windows Git Bash installer remains
+available.
+
+Project scope uses the project's `.claude/` directory. Personal scope uses
+`~/.claude/`. Claude Code supplies the active model and permissions. Start
+a fresh session, confirm `aegis1` appears in `/agents`, and run a read-only
+`/aegis` discovery test.
 
 ## Use
 
