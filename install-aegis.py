@@ -8,7 +8,7 @@ from pathlib import Path
 from shutil import copy2
 from tempfile import NamedTemporaryFile, mkdtemp
 
-INSTALL_VERSION = "0.2.3"
+INSTALL_VERSION = "0.2.4"
 SOURCE = Path(__file__).resolve().parent
 SKILLS = (
     "aegis", "architecture-analysis", "code-review", "debugging",
@@ -31,7 +31,7 @@ def replace_file(destination: Path, content: bytes) -> None:
 
 def install(target: Path, previous: Path = None) -> tuple[int, int]:
     paths = [Path("agents/aegis1.md"), Path("agents/aegis1-scout.md"),
-             Path("skills/aegis/memory.py")]
+             Path("agents/aegis1-verifier.md"), Path("skills/aegis/memory.py")]
     for skill in SKILLS:
         folder = SOURCE / "skills" / skill
         if not (folder / "SKILL.md").is_file():

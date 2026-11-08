@@ -42,6 +42,15 @@ inline. If the scout or Agent tool is unavailable, investigate inline under
 the same constraints. Honor user limits on tools and delegation. Verify the
 scout's consequential claims against source before relying on them.
 
+For verification of a cross-repository contract change or another
+consequential change, use the installed
+[Aegis1 verifier](../../agents/aegis1-verifier.md) when a separate context
+can add an independent check. Give it the authorized scope, the change or
+diff, acceptance criteria, and available test evidence. Use the inherited
+model. The main session owns any authorized runtime checks and the final
+verification status. If delegation is unavailable or the task is narrow,
+apply the verification specialist inline.
+
 When the request already authorizes an understood edit, apply the
 implementation specialist in the main session and make and verify the
 smallest sufficient change. This includes changes to Aegis1 when it is the

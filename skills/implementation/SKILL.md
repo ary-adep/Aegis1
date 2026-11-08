@@ -111,6 +111,20 @@ Use these where ambiguity matters:
 
 `FACT`, `REQUIREMENT`, `DECISION`, `ASSUMPTION`, `OBSERVATION`, `INFERENCE`, `PROPOSAL`, `UNKNOWN`.
 
+## Security follow-up
+
+When implementation and all required checks are complete for a feature that
+changes an externally reachable interface, trust boundary, sensitive data
+flow, or security control, offer VAPT once before the terminal status:
+“Would you like me to perform VAPT on this feature?”
+
+Skip this offer for wording-only changes, tasks with no relevant security
+impact, or when the user already requested or declined VAPT for this feature.
+If security testing is already an acceptance criterion, include it in the
+authorized verification scope. The offer does not authorize active testing.
+Carry the feature scope and evidence forward if the user accepts, and
+establish the approved target and permitted actions before active testing.
+
 ## Terminal statuses
 
 Use exactly one:

@@ -165,3 +165,25 @@ Claude Code conversation, ask:
 
 The scout inherits the session model and has Read, Glob, and Grep tools.
 `/aegis` can also select the scout automatically for a scoped investigation. Both installer entry points include the scout.
+
+## Multi-repository discovery in Claude Code
+
+Open the common parent folder of the relevant service checkouts. You can add
+a `WORKSPACE.md` with service names, relative checkout paths, and contract
+locations. Aegis1 uses the map to find evidence in the checked-out files.
+For cross-repo findings it reports each repository's branch, commit, and
+local changes when available, plus any missing checkout or revision.
+
+Example: `/aegis What would adding a required field to OrderPlaced affect?`
+If you explicitly save a cross-repo finding, recall it from the same workspace
+root. Cite each relevant source so changes in either repository can mark it
+stale. The standalone CLI takes one Git repository per run.
+
+## Independent verification in Claude Code
+
+For consequential changes, such as changes to an event shared across
+repositories, `/aegis` can delegate an evidence check to `aegis1-verifier`.
+The verifier inherits the session model and has Read, Glob, and Grep tools.
+Aegis1 hands it the scope, change, acceptance criteria, and available test
+evidence. The main session owns any authorized runtime checks and reports
+the final status. Focused verification can stay inline.

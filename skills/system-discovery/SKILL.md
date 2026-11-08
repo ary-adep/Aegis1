@@ -66,7 +66,7 @@ Use the evidence model in [evidence-model.md](references/evidence-model.md).
 
 For detailed discovery methods, use [discovery-methods.md](references/discovery-methods.md).
 
-For workspace/repository mapping, use [workspace-mapping.md](references/workspace-mapping.md).
+When a question spans repositories or the workspace has a `WORKSPACE.md`, use [workspace-mapping.md](references/workspace-mapping.md).
 
 ## Output
 

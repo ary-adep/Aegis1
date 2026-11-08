@@ -22,7 +22,7 @@ class DistributionChecks(unittest.TestCase):
     def test_distribution_is_structurally_valid(self):
         result = validate(self.root)
         self.assertTrue(result['passed'], result['errors'])
-        self.assertEqual(len(result['inventory']), 11)
+        self.assertEqual(len(result['inventory']), 12)
 
     def test_missing_agent_is_detected(self):
         (self.root / 'agents/aegis1.md').unlink()
