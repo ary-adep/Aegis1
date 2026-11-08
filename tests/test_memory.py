@@ -75,6 +75,14 @@ class MemoryChecks(unittest.TestCase):
         with closing(sqlite3.connect(self.store)) as db:
             self.assertEqual(db.execute('SELECT COUNT(*) FROM finding_sources').fetchone(), (0,))
 
+    def test_legacy_delete_also_removes_cited_sources(self):
+        record_id = self.save('a.txt', 'b.txt')
+        with closing(sqlite3.connect(self.store)) as db, db:
+            db.execute('DELETE FROM findings WHERE project = ? AND id = ?',
+                       (str(self.project.resolve()), record_id))
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM finding_sources').fetchone(), (0,))
+        self.assertEqual(self.recall(), {})
+
     def legacy_record(self, source='a.txt'):
         # Mirrors the single-source schema written before multi-source support.
         self.store.parent.mkdir()

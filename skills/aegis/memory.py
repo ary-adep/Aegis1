@@ -55,6 +55,10 @@ def main() -> int:
                     finding_id TEXT NOT NULL, source TEXT NOT NULL, fingerprint TEXT NOT NULL,
                     PRIMARY KEY (finding_id, source)
                 )""")
+                db.execute("""CREATE TRIGGER IF NOT EXISTS delete_finding_sources
+                    AFTER DELETE ON findings BEGIN
+                        DELETE FROM finding_sources WHERE finding_id = OLD.id;
+                    END""")
                 # The first source stays in findings so records remain readable by older helpers.
                 db.execute("INSERT INTO findings VALUES (?, ?, ?, ?, ?)",
                            (record_id, str(project), sources[0], hashes[0], finding))
@@ -73,6 +77,7 @@ def main() -> int:
             result = {"deleted": bool(deleted)}
         else:
             with closing(sqlite3.connect(store.as_uri() + "?mode=ro", uri=True)) as db:
+                db.execute("BEGIN")
                 rows = db.execute("""SELECT id, source, fingerprint, finding FROM findings
                     WHERE project = ? ORDER BY rowid DESC""", (str(project),)).fetchall()
                 cited = {}
