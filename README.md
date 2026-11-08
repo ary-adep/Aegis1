@@ -39,8 +39,10 @@ For other older versions, use a matching checkout to verify the existing files:
 python3 install-aegis.py --personal --upgrade-from "/path/to/previous/Aegis1"
 ```
 
-On Windows use `py -3` in place of `python3`. The installer stops before copying
-if an existing file conflicts. The Git Bash wrapper runs the same personal
+On Windows use `py -3` in place of `python3`. When run interactively,
+the installer can back up and replace unrecognized files in an unversioned
+copy-based install after asking for confirmation. Conflicts in a versioned
+installation stop the upgrade. The Git Bash wrapper runs the same personal
 installer. Recognized legacy Aegis1 junctions and agent symlinks are moved
 into `.claude/.aegis1-link-backups/` before installing independent copies.
 Their target checkout is preserved. Unrecognized linked contents stop the

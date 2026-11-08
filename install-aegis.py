@@ -3,11 +3,12 @@
 import argparse
 from hashlib import sha256
 import json
+import sys
 from pathlib import Path
 from shutil import copy2
 from tempfile import NamedTemporaryFile, mkdtemp
 
-INSTALL_VERSION = "0.2.1"
+INSTALL_VERSION = "0.2.2"
 SOURCE = Path(__file__).resolve().parent
 SKILLS = (
     "aegis", "architecture-analysis", "code-review", "debugging",
@@ -64,6 +65,7 @@ def install(target: Path, previous: Path = None) -> tuple[int, int]:
     fingerprints = {}
     pending = {}
     replacements = {}
+    conflicts = []
     for relative in paths:
         source = SOURCE / relative
         destination = target / relative
@@ -90,8 +92,20 @@ def install(target: Path, previous: Path = None) -> tuple[int, int]:
                     and original.read_bytes().replace(b"\r\n", b"\n") == installed.replace(b"\r\n", b"\n"))
             )
         if not matches_previous:
-            raise ValueError(f"Existing file differs from the expected version: {destination}")
+            conflicts.append(destination)
         replacements[destination] = (installed, content)
+
+    if conflicts:
+        paths = "\n".join(str(path) for path in conflicts)
+        if prior_manifest is not None or not sys.stdin.isatty():
+            raise ValueError(f"Existing files differ from the expected version:\n{paths}")
+        print(f"These unversioned Aegis1 files differ from the installer:\n{paths}")
+        try:
+            answer = input("Back up these files and install the new Aegis1 copies? [y/N] ")
+        except EOFError:
+            answer = ""
+        if answer.strip().lower() not in {"y", "yes"}:
+            raise ValueError("Upgrade declined. Existing files were kept.")
 
     backup = None
     if replacements:
