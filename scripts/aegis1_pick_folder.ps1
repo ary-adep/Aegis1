@@ -1,7 +1,8 @@
 param([string]$Root)
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-Add-Type -TypeDefinition @'
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -ReferencedAssemblies System.Windows.Forms -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
 
@@ -37,8 +38,6 @@ public static class AegisFolderPicker {
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
     static extern void SHCreateItemFromParsingName(string path, IntPtr context, ref Guid iid, out IShellItem item);
-    [DllImport("user32.dll")]
-    static extern IntPtr GetForegroundWindow();
 
     public static string Select(string root) {
         var dialog = (IFileDialog)Activator.CreateInstance(
@@ -52,7 +51,16 @@ public static class AegisFolderPicker {
             Guid iid = typeof(IShellItem).GUID;
             SHCreateItemFromParsingName(root, IntPtr.Zero, ref iid, out folder);
             dialog.SetFolder(folder);
-            int result = dialog.Show(GetForegroundWindow());
+            int result;
+            using (var owner = new System.Windows.Forms.Form()) {
+                owner.Text = "Aegis1";
+                owner.ShowInTaskbar = true;
+                owner.TopMost = true;
+                owner.Opacity = 0;
+                owner.Show();
+                owner.Activate();
+                result = dialog.Show(owner.Handle);
+            }
             if (result == unchecked((int)0x800704C7)) return null;
             Marshal.ThrowExceptionForHR(result);
             dialog.GetResult(out selected);

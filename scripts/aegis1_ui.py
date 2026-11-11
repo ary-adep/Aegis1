@@ -55,7 +55,7 @@ def native_folder_dialog(root: Path) -> str | None:
         if (sys.platform == "darwin" and "(-128)" in result.stderr
                 or sys.platform.startswith("linux") and result.returncode == 1 and not result.stderr.strip()):
             return None
-        raise OSError("Native folder picker unavailable")
+        raise OSError(result.stderr.strip() or "Native folder picker unavailable")
     return result.stdout.rstrip("\r\n") or None
 
 
@@ -152,7 +152,8 @@ class DiscoveryUI(BaseHTTPRequestHandler):
                     return
                 try:
                     selected = native_folder_dialog(root)
-                except (OSError, subprocess.TimeoutExpired):
+                except (OSError, subprocess.TimeoutExpired) as error:
+                    self.log_error("System folder picker failed: %s", error)
                     self.json_response(200, {"status": "unavailable"})
                     return
                 finally:

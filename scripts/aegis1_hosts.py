@@ -48,14 +48,26 @@ def reply_update(event):
     if event.get("type") == "stream_event":
         message = event.get("event", {})
         if message.get("type") == "message_start":
-            return "replace", ""
+            return "append", "\n\n"
         delta = message.get("delta", {})
         if message.get("type") == "content_block_delta" and delta.get("type") == "text_delta":
             return "append", delta.get("text", "")
-    item = event.get("item", {})
-    if event.get("type") in {"item.updated", "item.completed"} and item.get("type") == "agent_message":
-        return "replace", item.get("text", "")
+    if event.get("type") == "item.completed":
+        item = event.get("item", {})
+        if item.get("type") == "agent_message":
+            return "append", item.get("text", "") + "\n\n"
     return None
+
+
+def complete_report(parts, final=""):
+    sections = []
+    for part in [*parts, final]:
+        part = part.strip()
+        if part and part not in sections:
+            sections.append(part)
+    if final.strip() and all(part in final for part in sections):
+        return final.strip()
+    return "\n\n".join(sections)
 
 
 def run_with_progress(command, repo, prompt, run):
@@ -126,8 +138,15 @@ def run_read_only(host, executable, repo, prompt, run=None):
         raise ValueError(f"{host} could not complete the run. Check its sign-in and permissions.")
     if host == "claude":
         if run:
-            events = (json.loads(line) for line in result.stdout.splitlines() if line.strip())
+            events = [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
             response = next((event for event in events if event.get("type") == "result"), {})
+            parts = [
+                block["text"] for event in events if event.get("type") == "assistant"
+                for block in event.get("message", {}).get("content", [])
+                if block.get("type") == "text"
+            ]
+            if response and not response.get("is_error"):
+                response["result"] = complete_report(parts, response.get("result", ""))
         else:
             response = json.loads(result.stdout)
         if response.get("is_error"):
@@ -139,4 +158,4 @@ def run_read_only(host, executable, repo, prompt, run=None):
                 and event.get("item", {}).get("type") == "agent_message"]
     if not messages:
         raise ValueError("Codex returned no report.")
-    return {"report": messages[-1], "models": []}
+    return {"report": complete_report(messages) if run else messages[-1], "models": []}
