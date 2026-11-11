@@ -8,7 +8,7 @@ from pathlib import Path
 from shutil import copy2
 from tempfile import NamedTemporaryFile, mkdtemp
 
-INSTALL_VERSION = "0.2.5"
+INSTALL_VERSION = "0.2.6"
 SOURCE = Path(__file__).resolve().parent
 SKILLS = (
     "aegis", "architecture-analysis", "code-review", "debugging",

@@ -202,3 +202,19 @@ model menu through the CLI or VS Code extension executable. It initializes
 a host connection without submitting a task. The session's model and policy
 restrictions still apply. If the helper cannot reach the host, the role
 inherits the session model.
+
+## Compatibility with the work guard
+
+If your existing guard permits `aegis-scout` and `aegis-verifier` and both
+read-only agents are installed, opt in by putting the single line
+`work-guard` in `~/.aegis1/delegation-profile`. The pilot then calls the
+existing role names and leaves model selection to their host configuration.
+The guard still controls delegation. If a role is denied or unavailable,
+Aegis1 uses an allowed inline check or reports a blocker.
+
+Test with a project-scoped installation first. In a fresh Claude Code
+session, ask Aegis1 to show the exact skill file it loaded and use the scout
+for a bounded read-only question. Confirm the pilot skill path and an
+actual `aegis-scout` invocation. Use a consequential verification task to
+check `aegis-verifier` separately. Keep the existing marketplace checkout
+available while it supplies the guard plugin.

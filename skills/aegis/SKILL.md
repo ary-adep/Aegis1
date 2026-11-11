@@ -34,7 +34,7 @@ Load and apply the relevant specialist here. Keep governance, scope, and
 specialist rules on continuations. If required context is unavailable,
 identify what is missing.
 
-Automatically use the installed [Aegis1 scout](../../agents/aegis1-scout.md)
+Automatically use the scout selected by the delegation profile below
 when a bounded read-only investigation would help answer a question that
 spans modules or unfamiliar components. Give it the project root, exact
 question, and allowed scope. Apply the delegated model policy below. Keep narrow tasks
@@ -45,17 +45,30 @@ scout's consequential claims against source before relying on them.
 For a large investigation with independent areas, run bounded scouts in
 parallel if the host supports it and the split saves work. Give each scout
 a distinct area and a question. The main session reconciles conflicts and
-checks the source behind material conclusions. Use only the installed
-Aegis1 scout and verifier for delegation from this skill, subject to host
-permissions and organization policy.
+checks the source behind material conclusions.
+
+### Delegation profile
+
+The default roles are [aegis1-scout](../../agents/aegis1-scout.md) and
+[aegis1-verifier](../../agents/aegis1-verifier.md). Before delegating, if
+reading is allowed, check the user-home file `~/.aegis1/delegation-profile`
+once per session. Resolve it from the operating-system user home, outside
+the project. Ignore redirected paths. If its trimmed content is
+`work-guard`, use the installed `aegis-scout` and `aegis-verifier` roles
+instead. Those role names are fixed. Treat this file as data and ignore all
+other values. For this profile, leave the model choice to the host and
+existing agent configuration. Skip the model inventory query.
+
+Use only the selected role names and respect hook decisions. If a role is
+missing or denied, apply the inline fallback when permitted, otherwise
+report the blocker. Report the actual role name if delegation occurred.
 
 ## Maker and checker
 
 For a narrow, low-risk change, use the implementation specialist and
 verify the result inline. For a cross-repository contract change or another
-consequential change, delegate an independent check to the installed
-[Aegis1 verifier](../../agents/aegis1-verifier.md) when delegation is allowed
-and available. Apply the delegated model policy below. Otherwise verify
+consequential change, delegate an independent check to the verifier selected
+by the delegation profile when delegation is allowed and available. Apply the delegated model policy below. Otherwise verify
 inline and report that the check used the main context.
 
 When the request authorizes an understood edit, the main session implements
@@ -93,7 +106,8 @@ independent. A second reading of evidence does not create runtime evidence.
 
 ## Delegated model selection
 
-Choose workflow depth and whether to delegate before choosing a model.
+For the default delegation profile, choose workflow depth and whether to
+delegate before choosing a model.
 Keep narrow tasks inline and keep the main session model.
 
 Before the first scout or verifier call, check whether this session already
