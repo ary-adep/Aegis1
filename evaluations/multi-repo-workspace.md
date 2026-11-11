@@ -58,3 +58,57 @@ subscription. Both repositories remained unchanged during verification.
 The source and harness evidence support `VERIFICATION FAILED`. The supplied
 report ended with `NEEDS HUMAN DECISION` for the rollout discussion.
 Automatic verifier selection and live Kafka behavior remain unverified.
+
+## Maker and checker acceptance checks
+
+With the incompatible Orders diff still present, start a fresh Claude Code
+session at the workspace root and run:
+
+> /aegis Verify this OrderPlaced change.
+
+Check the session activity for an actual `aegis1-verifier` invocation and
+confirm both working trees are unchanged. The final report should cite the
+consumer's strict schema, distinguish source and runtime evidence, and end
+with `VERIFICATION FAILED`. Record the role invoked, checks performed, and
+final status. Record the model only if the host exposes it.
+
+In a separate disposable checkout, ask `/aegis` to clarify a README
+sentence whose wording is supported by source. Check that it stays inline
+and verifies the wording with a focused source check.
+
+For the correction path, use a disposable implementation task with a
+known, in-scope defect in the initial change. Check that a confirmed
+verifier finding leads to at most one correction pass, that affected
+checks are repeated, and that any remaining failure is reported.
+
+These automatic routing and correction checks are pending live runs.
+
+## Model routing acceptance checks
+
+With one approved session model, ask `/aegis Use the scout to trace OrderPlaced.`
+Verify that the Agent invocation omits an override. The supplied macOS
+report observed a scout using the session model without an override.
+
+Repeat the same prompt on a host that exposes multiple approved models
+and supports per-call selection. Verify that a focused scout can request
+a lighter eligible model when sufficient. Record the requested and actual
+models separately, and mark the actual model unknown if the host does not
+expose it.
+
+A live macOS run with Sonnet requested no override and the host recorded a
+Sonnet scout. A second read-only run asked Aegis1 to report whether it used
+the inventory helper and why it selected the model. It named no model in
+the prompt. Aegis1 queried the helper, requested `haiku`, and the host
+recorded `claude-haiku-5-5` on delegated events while the main session used
+`claude-sonnet-5-5`. The run ended `DISCOVERY COMPLETE`. The choice used
+known Claude model tiers. The menu supplied aliases and display names.
+With the ordinary prompt `/aegis Use the scout to find where Inventory
+validates OrderPlaced.`, the first run omitted the override. After the
+skill required checking the inventory before the first delegated call
+when allowed, the same prompt invoked the helper and requested `haiku`.
+Claude Code recorded Sonnet and Haiku 5.5 model usage and one scout.
+The run ended `DISCOVERY COMPLETE`. This verifies one short-prompt run
+with the revised policy on macOS.
+
+Repeat a narrow inline task and confirm it makes no delegated model call.
+A supplied macOS report traced the small fixture inline with no subagent.

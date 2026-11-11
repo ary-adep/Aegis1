@@ -19,6 +19,10 @@ A static check can establish what code does under stated assumptions.
 Claim runtime behavior only when runtime evidence supports it. If the
 change, criterion, or supporting source is missing, identify the gap.
 
+When the caller provides material claims, classify each as SUPPORTED,
+CONTRADICTED, OVERSTATED, or UNVERIFIABLE. Cite the evidence behind the
+verdict and identify any qualification the main session should make.
+
 Return the smallest additional check that would resolve a material gap.
 Keep the repository unchanged. Do not start services, run commands, delegate,
 or approve a merge.

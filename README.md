@@ -163,7 +163,7 @@ Claude Code conversation, ask:
 > Use the aegis1-scout subagent to locate where /aegis selects a specialist.
 > Cite files and lines. Read only within this checkout.
 
-The scout inherits the session model and has Read, Glob, and Grep tools.
+The scout inherits the session model by default and has Read, Glob, and Grep tools.
 `/aegis` can also select the scout automatically for a scoped investigation. Both installer entry points include the scout.
 
 ## Multi-repository discovery in Claude Code
@@ -183,7 +183,22 @@ stale. The standalone CLI takes one Git repository per run.
 
 For consequential changes, such as changes to an event shared across
 repositories, `/aegis` can delegate an evidence check to `aegis1-verifier`.
-The verifier inherits the session model and has Read, Glob, and Grep tools.
+The verifier inherits the session model by default and has Read, Glob, and Grep tools.
 Aegis1 hands it the scope, change, acceptance criteria, and available test
 evidence. The main session owns any authorized runtime checks and reports
 the final status. Focused verification can stay inline.
+
+## Model selection in Claude Code
+
+Aegis1 keeps narrow tasks in the main session. For delegated work it selects
+among models the host exposes as approved and available, using the task and
+any capability, cost, or latency evidence available. When the host provides
+no usable inventory or override, the scout and verifier inherit the session
+model. A Claude-only session with one approved model can use both roles.
+Ordinary task prompts require no model names or role-to-model settings.
+
+When needed for delegated work, the installed helper queries Claude Code's
+model menu through the CLI or VS Code extension executable. It initializes
+a host connection without submitting a task. The session's model and policy
+restrictions still apply. If the helper cannot reach the host, the role
+inherits the session model.

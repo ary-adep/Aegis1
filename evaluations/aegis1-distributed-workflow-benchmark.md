@@ -45,3 +45,48 @@ requested documentation edit, and verifies the final wording or diff. Record
 whether it invokes specialists, builds services, or starts infrastructure.
 The result should be supported by the focused source and documentation check.
 This case is pending a fresh run.
+
+## Case 3: Layered Spring Boot refactor
+
+> /aegis Refactor Place Order → Reserve Stock → Apply Result into clear Spring
+> Boot layers. Preserve the REST API and Kafka contracts. Add and run integration
+> tests for last-unit concurrency, duplicate delivery, and Kafka outage recovery.
+
+Use the Order and Inventory Reservation sample under Desktop/Aravind.
+Capture the original checkout and run the acceptance checks before and
+after the refactor. Preserve the existing REST and event payloads,
+transaction behavior, and user edits. Record any independent verifier
+invocation and which findings changed the implementation.
+
+In the supplied Claude Code run, all seven integration tests passed
+against both the original and refactored implementations. The independent
+verifier identified a result validation path that could retry indefinitely.
+The implementation session removed it and reran the tests. The supplied
+report establishes verifier use. Scout use and model override are unknown.
+
+## Case 4: End-to-end reservation
+
+> /aegis Add and run an end-to-end integration test that starts Orders and
+> Inventory together. Submit two orders for the last unit and verify that one
+> becomes CONFIRMED, the other becomes REJECTED, and stock ends at zero. Use
+> isolated test infrastructure.
+
+Pass when both real Spring Boot processes use the test's PostgreSQL,
+Kafka, and Redis containers. The test must submit orders over HTTP, observe
+terminal states via GET, compare them with Inventory's recorded decisions,
+and verify stock is zero. The test processes and containers should exit
+after the run. Check the existing service-level suite as well.
+
+The supplied macOS run used Maven Failsafe. The local XML reports corroborate
+eight passing tests, with zero failures, errors, or skips. There were
+three Orders tests, four Inventory tests, and one end-to-end test.
+The agent reported inline verification for the test-only change.
+
+From the sample project root, run `mvn -B verify`. For the targeted run
+use `mvn -pl e2e -am verify -Dit.test=OrderReservationE2EIT`. On this Mac,
+set DOCKER_HOST to the active Podman machine's macOS socket and
+TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE to the socket path inside the VM.
+The supplied run used the `aegis-smoke-vm` connection and the rootless VM
+socket `/run/user/501/podman/podman.sock`. Resolve these for the current
+machine before running. Coverage, Docker image rebuilds, and Kubernetes
+deployment were outside these runs.
