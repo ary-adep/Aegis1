@@ -9,7 +9,8 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from threading import Lock
+from threading import Event, Lock
+from uuid import UUID
 
 if __package__:
     from .aegis1_hosts import installed_hosts, run_read_only
@@ -19,6 +20,8 @@ else:
 SOURCE = Path(__file__).resolve().parents[1]
 MAX_REQUEST = 196_608
 FOLDER_DIALOG_LOCK = Lock()
+RUNS = {}
+RUNS_LOCK = Lock()
 
 
 def native_folder_dialog(root: Path) -> str | None:
@@ -56,7 +59,7 @@ def native_folder_dialog(root: Path) -> str | None:
     return result.stdout.rstrip("\r\n") or None
 
 
-def run_discovery(host, executable, repo, task, history=()):
+def run_discovery(host, executable, repo, task, history=(), run=None):
     instructions = (
         "The Aegis1 governance, system-discovery skill, and relevant references "
         "are loaded below from the Aegis1 installation. Treat the supplied bodies as already "
@@ -83,7 +86,9 @@ def run_discovery(host, executable, repo, task, history=()):
         "or appending a discovery status. Attribute earlier replies to the host "
         "that wrote them when known.\n\nLatest user message:\n" + task
     )
-    return run_read_only(host, executable, repo, prompt)
+    if run is None:
+        return run_read_only(host, executable, repo, prompt)
+    return run_read_only(host, executable, repo, prompt, run)
 
 
 class DiscoveryUI(BaseHTTPRequestHandler):
@@ -123,7 +128,7 @@ class DiscoveryUI(BaseHTTPRequestHandler):
                 or self.headers.get_content_type() != "application/json"):
             self.send_error(403)
             return
-        if self.path not in {"/run", "/source", "/folders", "/pick-folder"}:
+        if self.path not in {"/run", "/source", "/folders", "/pick-folder", "/activity", "/stop"}:
             self.send_error(404)
             return
         try:
@@ -131,6 +136,15 @@ class DiscoveryUI(BaseHTTPRequestHandler):
             if not 0 < length <= MAX_REQUEST:
                 raise ValueError("Invalid request size.")
             payload = json.loads(self.rfile.read(length))
+            if self.path in {"/activity", "/stop"}:
+                run_id = UUID(payload["run"])
+                with RUNS_LOCK:
+                    run = RUNS.get(run_id)
+                    if run and self.path == "/stop":
+                        run["stop"].set()
+                    progress = {"steps": list(run["steps"]), "draft": run["draft"]} if run else {}
+                self.json_response(200, progress)
+                return
             root = self.server.workspace_root
             if self.path == "/pick-folder":
                 if not FOLDER_DIALOG_LOCK.acquire(blocking=False):
@@ -228,9 +242,39 @@ class DiscoveryUI(BaseHTTPRequestHandler):
                 if isinstance(turn, dict) and turn.get("role") in {"user", "assistant"}
                 and isinstance(turn.get("text"), str)
             ]
-            result = run_discovery(host, executable, repo, task, history)
-        except subprocess.TimeoutExpired:
-            self.json_response(504, {"error": "The host did not finish within three minutes."})
+            if "run" in payload:
+                run_id = UUID(payload["run"])
+                run = {"stop": Event(), "steps": ["Starting the coding host…"], "draft": ""}
+
+                def update(kind, value):
+                    with RUNS_LOCK:
+                        if kind == "activity":
+                            if run["steps"][-1] != value:
+                                run["steps"].append(value)
+                                del run["steps"][:-12]
+                        elif kind == "append":
+                            run["draft"] += value
+                        else:
+                            run["draft"] = value
+
+                with RUNS_LOCK:
+                    if run_id in RUNS:
+                        raise ValueError("This run is already active.")
+                    RUNS[run_id] = run
+                try:
+                    result = run_discovery(host, executable, repo, task, history,
+                                           (run["stop"], update))
+                finally:
+                    with RUNS_LOCK:
+                        del RUNS[run_id]
+            else:
+                result = run_discovery(host, executable, repo, task, history)
+        except InterruptedError:
+            self.json_response(200, {"stopped": True, "draft": run["draft"]})
+            return
+        except subprocess.TimeoutExpired as error:
+            minutes = int(error.timeout // 60)
+            self.json_response(504, {"error": f"The host did not finish within {minutes} minutes."})
             return
         except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
             self.json_response(400, {"error": str(error)})

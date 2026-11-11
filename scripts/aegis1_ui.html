@@ -81,8 +81,8 @@ button.citation { display: inline; background: transparent; color: var(--accent)
 <div><label for="folder">Workspace path</label>
 <div class="workspace-input">
 <input id="folder" form="composer" list="workspace-options" placeholder="Choose or enter a path" required>
-<button id="browse-folder" type="button" disabled>Browse</button>
-<button id="browse-here" type="button" hidden>Browse here</button></div>
+<button id="browse-folder" type="button" disabled>System picker</button>
+<button id="browse-here" type="button" disabled>Browse here</button></div>
 <datalist id="workspace-options"></datalist></div>
 <div><label for="host">Run with</label><select id="host" form="composer" required></select></div>
 <button id="toggle-evidence" type="button" aria-controls="evidence" aria-expanded="true">Hide evidence</button>
@@ -99,7 +99,7 @@ button.citation { display: inline; background: transparent; color: var(--accent)
 <form id="composer" class="composer">
 <label for="task">Message</label>
 <textarea id="task" required maxlength="4000" placeholder="Ask a read-only question about your workspace"></textarea>
-<div class="composer-footer"><span id="status" role="status">Checking available hosts…</span><button disabled>Send</button></div>
+<div class="composer-footer"><span id="status" role="status">Checking available hosts…</span><button id="send" disabled>Send</button><button id="stop" type="button" hidden>Stop</button></div>
 </form>
 </section>
 <aside class="evidence" id="evidence" aria-labelledby="evidence-title">
@@ -173,7 +173,14 @@ async function browse(path) {
   }
 }
 
-browseHere.addEventListener('click', () => nativeRequest?.abort());
+browseHere.addEventListener('click', () => {
+  if (nativeRequest) {
+    nativeRequest.abort();
+  } else if (!browser.open) {
+    browser.showModal();
+    browse('.');
+  }
+});
 
 browseFolder.addEventListener('click', async () => {
   browseFolder.disabled = true;
@@ -182,7 +189,6 @@ browseFolder.addEventListener('click', async () => {
   status.textContent = 'Choose a folder in the system dialog.';
   const controller = new AbortController();
   nativeRequest = controller;
-  browseHere.hidden = false;
   const fallback = windowsHost ? setTimeout(() => controller.abort(), 30000) : null;
   try {
     const response = await fetch('/pick-folder', {
@@ -209,7 +215,6 @@ browseFolder.addEventListener('click', async () => {
     }
   } finally {
     clearTimeout(fallback);
-    browseHere.hidden = true;
     nativeRequest = null;
     browseFolder.disabled = Boolean(active) || busy;
     newChat.disabled = busy;
@@ -385,6 +390,7 @@ function showChat(chat) {
   host.disabled = busy;
   folder.disabled = Boolean(chat) || busy;
   browseFolder.disabled = Boolean(chat) || busy;
+  browseHere.disabled = Boolean(chat) || busy;
   button.disabled = busy || !host.value || !folder.value.trim();
   newChat.disabled = busy;
   if (storageKey) {
@@ -550,6 +556,15 @@ task.addEventListener('keydown', event => {
   }
 });
 
+const stop = document.getElementById('stop');
+let stopRequested = false;
+let currentRun;
+stop.addEventListener('click', () => {
+  stopRequested = true;
+  stop.disabled = true;
+  status.textContent = 'Stopping…';
+});
+
 form.addEventListener('submit', async event => {
   event.preventDefault();
   const text = task.value.trim();
@@ -568,13 +583,70 @@ form.addEventListener('submit', async event => {
   task.value = '';
   status.textContent = 'Running with ' + labels[selectedHost] + '…';
   showChat(chat);
+  const run = crypto.randomUUID();
+  currentRun = run;
+  const live = document.createElement('article');
+  live.className = 'message';
+  const liveTitle = document.createElement('div');
+  liveTitle.className = 'message-label';
+  liveTitle.textContent = labels[selectedHost];
+  const activity = document.createElement('details');
+  const activityTitle = document.createElement('summary');
+  activityTitle.textContent = 'Starting the coding host…';
+  const steps = document.createElement('ul');
+  activity.append(activityTitle, steps);
+  const draft = document.createElement('div');
+  draft.style.whiteSpace = 'pre-wrap';
+  live.append(liveTitle, activity, draft);
+  document.getElementById('conversation').append(live);
+  let polling = false;
+  stopRequested = false;
+  stop.hidden = false;
+  stop.disabled = false;
+  const activityTimer = setInterval(async () => {
+    if (polling) return;
+    polling = true;
+    try {
+      const response = await fetch(stopRequested ? '/stop' : '/activity', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({run})
+      });
+      const progress = await response.json();
+      if (currentRun !== run || !progress.steps) return;
+      const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 100;
+      steps.replaceChildren(...progress.steps.map(text => {
+        const step = document.createElement('li');
+        step.textContent = text;
+        return step;
+      }));
+      activityTitle.textContent = progress.draft
+        ? 'Activity'
+        : progress.steps.at(-1) || 'Working…';
+      draft.textContent = progress.draft;
+      if (!stopRequested) status.textContent = progress.draft ? 'Writing reply…' : 'Working…';
+      if (atBottom) window.scrollTo(0, document.documentElement.scrollHeight);
+    } catch {
+      // The run request reports any connection failure.
+    } finally {
+      polling = false;
+    }
+  }, 500);
   try {
     const response = await fetch('/run', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({host: selectedHost, folder: chat.workspace, task: text, history})
+      body: JSON.stringify({host: selectedHost, folder: chat.workspace, task: text, history, run})
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Discovery failed.');
+    if (result.stopped) {
+      userMessage.local = true;
+      if (result.draft) chat.messages.push({
+        role: 'assistant', text: result.draft, local: true,
+        label: labels[selectedHost] + ' · Stopped'
+      });
+      status.textContent = 'Run stopped.';
+      return;
+    }
     const local = result.started === false;
     userMessage.local = local;
     chat.messages.push({
@@ -586,6 +658,9 @@ form.addEventListener('submit', async event => {
     userMessage.local = true;
     status.textContent = error.message;
   } finally {
+    currentRun = undefined;
+    clearInterval(activityTimer);
+    stop.hidden = true;
     busy = false;
     showChat(chat);
     persist();
