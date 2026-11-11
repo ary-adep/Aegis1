@@ -136,6 +136,7 @@ const useFolder = document.querySelector('#use-folder');
 const parentFolder = document.querySelector('#parent-folder');
 let browsed = null;
 let browseRequest = 0;
+let windowsHost = false;
 
 async function browse(path) {
   const request = ++browseRequest;
@@ -174,9 +175,11 @@ browseFolder.addEventListener('click', async () => {
   newChat.disabled = true;
   button.disabled = true;
   status.textContent = 'Choose a folder in the system dialog.';
+  const controller = new AbortController();
+  const fallback = windowsHost ? setTimeout(() => controller.abort(), 6000) : null;
   try {
     const response = await fetch('/pick-folder', {
-      method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}', signal: controller.signal
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Could not select a folder.');
@@ -190,8 +193,15 @@ browseFolder.addEventListener('click', async () => {
       browse('.');
     }
   } catch (error) {
-    status.textContent = error.message;
+    if (error.name === 'AbortError') {
+      status.textContent = 'Using the browser picker. Close the system dialog if it appears.';
+      browser.showModal();
+      browse('.');
+    } else {
+      status.textContent = error.message;
+    }
   } finally {
+    clearTimeout(fallback);
     browseFolder.disabled = Boolean(active) || busy;
     newChat.disabled = busy;
     folder.dispatchEvent(new Event('input'));
@@ -497,6 +507,7 @@ newChat.addEventListener('click', () => {
 fetch('/options').then(async response => {
   if (!response.ok) throw new Error('Could not load local options.');
   const options = await response.json();
+  windowsHost = options.windows === true;
   for (const value of options.hosts) host.add(new Option(labels[value], value));
   for (const value of options.folders) {
     const option = document.createElement('option');

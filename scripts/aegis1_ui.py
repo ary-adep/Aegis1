@@ -125,7 +125,8 @@ class DiscoveryUI(BaseHTTPRequestHandler):
             root = self.server.workspace_root
             folders = ["."] + sorted(path.name for path in root.iterdir()
                                      if not path.name.startswith(".") and not path.is_symlink() and path.is_dir())
-            self.json_response(200, {"hosts": list(installed_hosts()), "folders": folders, "root": str(root)})
+            self.json_response(200, {"hosts": list(installed_hosts()), "folders": folders,
+                                     "root": str(root), "windows": sys.platform == "win32"})
         else:
             self.send_error(404)
 
