@@ -133,6 +133,31 @@ Use only repositories approved for this provider. The adapter sends the task,
 tracked path inventory, and bounded file excerpts to the provider. API usage
 is billed according to the API account.
 
+### Automatic standalone model selection
+
+Use `--model auto` to query configured provider inventories and select a
+known model suitable for read-only discovery. Set `OPENAI_API_KEY` for OpenAI
+or `ANTHROPIC_API_KEY` for the Claude API. One configured provider is
+sufficient. The optional `AEGIS1_APPROVED_MODELS` environment variable limits
+both automatic and explicit live selections to its comma-separated list of
+provider/model IDs. The result of automatic selection includes the requested
+model. For explicit Claude selection use `--model claude/MODEL`.
+
+### Pause and resume discovery
+
+Keep the checkpoint outside the inspected repository. The checkpoint stores
+the task, checkout path, revision, and fingerprints of the file prefixes
+read so far. When resuming, Aegis1 rereads tracked files, reuses matching
+evidence, and identifies changed or missing sources. Repeat the same task
+and repository. You can select a different approved model on resume.
+
+```sh
+aegis1 run --repo /path/to/repo --model claude/MODEL \
+  --checkpoint /path/outside/repo/run.json --pause-after 1 "Map the entry points"
+aegis1 run --repo /path/to/repo --model openai/MODEL \
+  --checkpoint /path/outside/repo/run.json --resume "Map the entry points"
+```
+
 ### Graphify-assisted discovery
 
 Pass `--graph /path/to/graphify-out/graph.json` to use an existing Graphify
@@ -218,3 +243,52 @@ for a bounded read-only question. Confirm the pilot skill path and an
 actual `aegis-scout` invocation. Use a consequential verification task to
 check `aegis-verifier` separately. Keep the existing marketplace checkout
 available while it supplies the guard plugin.
+
+## Local discovery UI
+
+From the Aegis1 checkout, launch the local UI with Python 3.9 or later:
+
+```sh
+python3 scripts/aegis1_ui.py --workspace-root "$HOME/Desktop/Aravind"
+```
+
+Open the loopback URL printed in the terminal. Select Claude Code or Codex,
+choose a suggested workspace or enter a relative or absolute folder path
+inside the configured workspace root, and start a read-only chat. Each chat keeps its
+workspace. Switch hosts between messages, or use New chat to change the
+workspace. Select a saved chat in History to resume it. Copy saves an
+individual response to the clipboard as Markdown. Follow-up requests
+include the last six non-local messages, with each capped at 4,000
+characters. History is stored by the browser for this URL and workspace
+root. Private browsing may clear history when its windows close.
+The UI uses the installed host's existing sign-in and default model. Claude Code is
+limited to file tools and Codex runs in its read-only sandbox. Press Ctrl+C
+in the terminal to stop the server.
+
+## Development handoff between hosts
+
+Use the standalone command to save a local checkpoint after an implementation
+step. List each authorized file with a separate `--scope`. The checkpoint
+contains the scoped Git diff, base revision, file fingerprints, supplied check
+results, and remaining work. Store it outside the inspected checkout.
+
+```sh
+aegis1 handoff save --repo /path/to/repo --checkpoint /path/to/handoff.json \\
+  --scope stock.py --goal "Reject nonpositive reservations" \\
+  --evidence "Valid and invalid requests checked" --pending "Independent review"
+aegis1 handoff check --repo /path/to/repo --checkpoint /path/to/handoff.json
+```
+
+Use the review command to check the snapshot and pass a current checkpoint
+to a signed-in host in one step.
+
+```sh
+aegis1 handoff review --repo /path/to/repo --checkpoint /path/to/handoff.json --host codex
+```
+
+Use \`--host claude\` for Claude Code. A stale snapshot stops the review before
+launching the host. If the checkout changes during review, Aegis1 discards the
+result and reports the stale snapshot. This verifies that the recorded checkout state still matches. It
+does not rerun supplied checks. A stale checkpoint suppresses the earlier
+check results in the command output. Recheck the changed work before relying
+on those results. The commands use Git and local files.

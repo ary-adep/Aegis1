@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aegis1 | Repository discovery</title>
+<style>
+:root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; background: #11151c; color: #e6eaf0; --border: #303846; --muted: #a2adbd; --accent: #9bc0ff; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+header { min-height: 76px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 14px 24px; border-bottom: 1px solid var(--border); background: #171d27; }
+.brand { display: flex; align-items: center; gap: 10px; }
+h1 { margin: 0; font-size: 23px; letter-spacing: -.045em; }
+h2 { margin: 0; font-size: 15px; font-weight: 650; }
+p { margin: 0; line-height: 1.6; }
+small, #status, .muted { color: var(--muted); }
+.controls { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; }
+.controls label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+select, textarea, input, button { font: inherit; }
+select, textarea, input { background: #141a23; color: inherit; border: 1px solid #445165; border-radius: 7px; padding: 8px 10px; }
+select { max-width: 240px; }
+button { border: 1px solid #445165; border-radius: 7px; padding: 7px 11px; background: #222c3a; color: inherit; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button:disabled { opacity: .55; cursor: default; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.layout { display: grid; grid-template-columns: 236px minmax(0, 1fr) minmax(250px, 310px); min-height: 0; }
+.layout.evidence-hidden { grid-template-columns: 236px minmax(0, 1fr); }
+.sidebar, .evidence { min-width: 0; padding: 17px 14px; background: #171d27; overflow: auto; }
+.sidebar { border-right: 1px solid var(--border); }
+.evidence { border-left: 1px solid var(--border); }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+#search-history { width: 100%; margin-bottom: 13px; }
+.history { display: grid; gap: 4px; }
+.history button, #citations button { text-align: left; width: 100%; border-color: transparent; background: transparent; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history button[aria-current="true"] { background: #293a54; border-color: #3e5676; }
+.group-label { font-size: 12px; color: var(--muted); margin: 10px 0 2px; overflow-wrap: anywhere; }
+.chat { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-width: 0; min-height: 0; }
+#conversation { overflow: auto; padding: 24px clamp(16px, 4vw, 64px); }
+.message { max-width: 890px; margin: 0 auto 18px; padding: 16px 18px; border-radius: 10px; overflow-wrap: anywhere; }
+.message.user { background: #24344c; white-space: pre-wrap; }
+.message.assistant { background: #191f29; border: 1px solid var(--border); }
+.message-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.message-label, #status { font-size: 13px; color: var(--muted); }
+button.copy-response { padding: 4px 8px; font-size: 12px; }
+.composer { padding: 12px clamp(16px, 4vw, 64px) 16px; background: #171d27; border-top: 1px solid var(--border); }
+.composer label { display: block; font-size: 13px; margin-bottom: 6px; color: var(--muted); }
+textarea { width: 100%; min-height: 64px; max-height: 28vh; resize: vertical; display: block; }
+.composer-footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; }
+.composer button { background: var(--accent); border-color: transparent; color: #121d2d; font-weight: 650; }
+.report h3, .report h4, .report h5, .report h6 { margin: 20px 0 7px; }
+.report p { margin: 8px 0; }
+.report li { margin: 4px 0; }
+.report code, pre { background: #11151c; border-radius: 4px; }
+.report code { padding: 1px 4px; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.6 monospace; padding: 12px; }
+.report-table { overflow-x: auto; margin: 12px 0; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid var(--border); padding: 8px; text-align: left; }
+button.citation { display: inline; background: transparent; color: var(--accent); border: 0; padding: 0; font: inherit; text-align: left; text-decoration: underline; overflow-wrap: anywhere; }
+#citations { display: grid; gap: 3px; }
+#source-title { font-size: 13px; overflow-wrap: anywhere; margin-top: 14px; }
+.source-focus { background: #304b70; color: #fff; }
+@media (max-width: 1000px) { .layout { grid-template-columns: 190px minmax(0,1fr) 245px; } .layout.evidence-hidden { grid-template-columns: 190px minmax(0,1fr); } }
+@media (max-width: 760px) { main { height: auto; min-height: 100dvh; } .layout, .layout.evidence-hidden { grid-template-columns: minmax(0,1fr); } .sidebar, .evidence { border: 0; border-bottom: 1px solid var(--border); } .history { max-height: 105px; overflow: auto; } .chat { height: 72vh; } }
+</style>
+<main>
+<header>
+<div class="brand"><h1>Aegis1</h1><span class="muted">Discovery workspace</span></div>
+<div class="controls">
+<div><label for="folder">Workspace path</label>
+<input id="folder" form="composer" list="workspace-options" placeholder="Choose or enter a path" required>
+<datalist id="workspace-options"></datalist></div>
+<div><label for="host">Run with</label><select id="host" form="composer" required></select></div>
+<button id="toggle-evidence" type="button" aria-controls="evidence" aria-expanded="true">Hide evidence</button>
+</div>
+</header>
+<div class="layout">
+<aside class="sidebar" aria-labelledby="history-title">
+<div class="section-head"><h2 id="history-title">Chats</h2><button id="new-chat" type="button">New chat</button></div>
+<input id="search-history" type="search" aria-label="Search chat history" placeholder="Search history">
+<div id="history" class="history"></div>
+</aside>
+<section class="chat" aria-label="Discovery chat">
+<div id="conversation" aria-label="Conversation"></div>
+<form id="composer" class="composer">
+<label for="task">Message</label>
+<textarea id="task" required maxlength="4000" placeholder="Ask a read-only question about your workspace"></textarea>
+<div class="composer-footer"><span id="status" role="status">Checking available hosts…</span><button disabled>Send</button></div>
+</form>
+</section>
+<aside class="evidence" id="evidence" aria-labelledby="evidence-title">
+<div class="section-head"><h2 id="evidence-title">Source evidence</h2></div>
+<div id="citations"></div>
+<h3 id="source-title" hidden></h3><pre id="source-text" hidden></pre>
+</aside>
+</div>
+</main>
+<script>
+const form = document.querySelector('#composer');
+const host = document.querySelector('#host');
+const folder = document.querySelector('#folder');
+const workspaceOptions = document.querySelector('#workspace-options');
+const task = document.querySelector('#task');
+const button = form.querySelector('button');
+const status = document.querySelector('#status');
+const conversation = document.querySelector('#conversation');
+const labels = {claude: 'Claude Code', codex: 'Codex · ChatGPT'};
+
+
+const evidencePanel = document.querySelector('#evidence');
+const toggleEvidence = document.querySelector('#toggle-evidence');
+const citations = document.querySelector('#citations');
+const references = new Map();
+let previewRequest = 0;
+
+function showEvidence(visible) {
+  evidencePanel.hidden = !visible;
+  document.querySelector('.layout').classList.toggle('evidence-hidden', !visible);
+  toggleEvidence.setAttribute('aria-expanded', String(visible));
+  toggleEvidence.textContent = visible ? 'Hide evidence' : 'Show evidence';
+}
+
+toggleEvidence.addEventListener('click', () => showEvidence(evidencePanel.hidden));
+const sourceTitle = document.querySelector('#source-title');
+const sourceText = document.querySelector('#source-text');
+
+async function openSource(workspace, path, line) {
+  sourceTitle.textContent = path + (line ? ':' + line : '');
+  sourceText.textContent = 'Loading source…';
+  const request = ++previewRequest;
+  sourceTitle.hidden = false;
+  sourceText.hidden = false;
+  showEvidence(true);
+  try {
+    const response = await fetch('/source', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({folder: workspace, path, line})
+    });
+    const source = await response.json();
+    if (!response.ok) throw new Error(source.error || 'Source is unavailable.');
+    if (request !== previewRequest) return;
+    sourceText.replaceChildren();
+    source.lines.forEach((text, index) => {
+      const number = source.start + index;
+      const row = document.createElement('span');
+      if (number === source.line) row.className = 'source-focus';
+      row.textContent = String(number).padStart(4) + '  ' + text + '\n';
+      sourceText.append(row);
+    });
+  } catch (error) {
+    if (request === previewRequest) sourceText.textContent = error.message;
+  }
+}
+
+function inline(element, text, workspace) {
+  const tokens = /\x60([^\x60]+)\x60|\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)\s]+)\)/g;
+  let position = 0;
+  for (const match of text.matchAll(tokens)) {
+    element.append(text.slice(position, match.index));
+    const reference = match[4] || match[1];
+    const citation = reference && reference.match(/^((?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_-][A-Za-z0-9_.-]*\.[A-Za-z0-9]+)(?:#L(\d+)(?:-L\d+)?|:(\d+)(?:[-,].*)?)?$/);
+    const fileReference = citation && (match[4] || citation[1].includes('/') ||
+      /\.(java|kt|py|js|ts|go|rs|sql|xml|json|ya?ml|toml|properties|md|txt|sh|html|css)$/i.test(citation[1]));
+    if (fileReference) {
+      const link = document.createElement('button');
+      link.type = 'button';
+      link.className = 'citation';
+      link.textContent = match[3] || reference;
+      const line = citation[2] || citation[3];
+      references.set(citation[1] + (line ? ':' + line : ''), {workspace, path: citation[1], line});
+      link.addEventListener('click', () => openSource(workspace, citation[1], line));
+      element.append(link);
+    } else {
+      const span = document.createElement(match[1] ? 'code' : match[2] ? 'strong' : 'span');
+      span.textContent = match[1] || match[2] || match[3];
+      element.append(span);
+    }
+    position = match.index + match[0].length;
+  }
+  element.append(text.slice(position));
+}
+
+function renderReport(text, workspace, report) {
+  report.replaceChildren();
+  const lines = text.split(/\r?\n/);
+  const isRow = line => /^\s*\|/.test(line);
+  const cells = line => line.trim().replace(/^\||\|$/g, '').split('|').map(cell => cell.trim());
+  const listItem = line => line.match(/^\s*(-|\d+\.)\s+(.*)$/);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) continue;
+    if (line.startsWith('\x60\x60\x60')) {
+      const code = document.createElement('pre');
+      const contents = [];
+      while (++i < lines.length && !lines[i].startsWith('\x60\x60\x60')) contents.push(lines[i]);
+      code.textContent = contents.join('\n');
+      report.append(code);
+      continue;
+    }
+    if (isRow(line) && /^\s*\|?[\s|:-]+\s*$/.test(lines[i + 1] || '')) {
+      const table = document.createElement('table');
+      const addRow = (parent, values, tag) => {
+        const row = parent.insertRow();
+        for (const value of values) {
+          const cell = document.createElement(tag);
+          inline(cell, value, workspace);
+          row.append(cell);
+        }
+      };
+      addRow(table.createTHead(), cells(line), 'th');
+      i++;
+      const body = table.createTBody();
+      while (i + 1 < lines.length && isRow(lines[i + 1])) addRow(body, cells(lines[++i]), 'td');
+      const container = document.createElement('div');
+      container.className = 'report-table';
+      container.append(table);
+      report.append(container);
+      continue;
+    }
+    if (listItem(line)) {
+      const ordered = listItem(line)[1] !== '-';
+      const list = document.createElement(ordered ? 'ol' : 'ul');
+      do {
+        const item = document.createElement('li');
+        inline(item, listItem(lines[i])[2], workspace);
+        list.append(item);
+        const next = listItem(lines[i + 1] || '');
+        if (!next || (next[1] !== '-') !== ordered) break;
+        i++;
+      } while (i < lines.length);
+      report.append(list);
+      continue;
+    }
+    const heading = line.match(/^(#{1,6})\s+(.*)$/);
+    const block = document.createElement(heading ? 'h' + Math.min(6, heading[1].length + 2) : 'p');
+    inline(block, heading ? heading[2] : line, workspace);
+    report.append(block);
+  }
+}
+
+
+const historyList = document.querySelector('#history');
+const newChat = document.querySelector('#new-chat');
+const searchHistory = document.querySelector('#search-history');
+let chats = [];
+let active = null;
+let storageKey = '';
+let busy = false;
+
+function persist() {
+  try { localStorage.setItem(storageKey, JSON.stringify(chats)); }
+  catch { status.textContent = 'Browser storage is unavailable or full.'; }
+}
+
+function showChat(chat) {
+  active = chat;
+  if (chat) {
+    if (Array.from(host.options).some(option => option.value === chat.host)) host.value = chat.host;
+    folder.value = chat.workspace;
+  }
+  host.disabled = busy;
+  folder.disabled = Boolean(chat) || busy;
+  button.disabled = busy || !host.value || !folder.value.trim();
+  newChat.disabled = busy;
+  if (storageKey) {
+    try { localStorage.setItem(storageKey + ':active', chat?.id || ''); } catch {}
+  }
+  conversation.replaceChildren();
+  references.clear();
+  previewRequest++;
+  sourceTitle.hidden = true;
+  sourceText.hidden = true;
+  if (!chat) {
+    const welcome = document.createElement('p');
+    welcome.textContent = 'Choose a host and workspace, then ask a question.';
+    conversation.append(welcome);
+  }
+  for (const message of chat?.messages || []) {
+    const article = document.createElement('article');
+    article.className = 'message ' + message.role;
+    const label = document.createElement('span');
+    label.className = 'message-label';
+    label.textContent = message.role === 'user' ? 'You' : message.label || 'Aegis1';
+    const content = document.createElement('div');
+    content.className = 'report';
+    if (message.role === 'assistant') renderReport(message.text, chat.workspace, content);
+    else content.textContent = message.text;
+    const header = document.createElement('div');
+    header.className = 'message-header';
+    header.append(label);
+    if (message.role === 'assistant') {
+      const copy = document.createElement('button');
+      copy.type = 'button';
+      copy.className = 'copy-response';
+      copy.textContent = 'Copy';
+      copy.setAttribute('aria-label', 'Copy this response');
+      copy.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(message.text);
+          copy.textContent = 'Copied';
+        } catch {
+          copy.textContent = 'Copy unavailable';
+        }
+      });
+      header.append(copy);
+    }
+    article.append(header, content);
+    conversation.append(article);
+  }
+  conversation.scrollTop = conversation.scrollHeight;
+  citations.replaceChildren();
+  if (!references.size) {
+    const note = document.createElement('p');
+    note.className = 'muted';
+    note.textContent = 'Citations from this chat will appear here.';
+    citations.append(note);
+  }
+  for (const [name, reference] of references) {
+    const entry = document.createElement('button');
+    entry.type = 'button';
+    entry.textContent = name;
+    entry.title = name;
+    entry.addEventListener('click', () => openSource(reference.workspace, reference.path, reference.line));
+    citations.append(entry);
+  }
+  renderHistory();
+}
+
+function renderHistory() {
+  historyList.replaceChildren();
+  const query = searchHistory.value.trim().toLowerCase();
+  const groups = new Map();
+  for (const chat of chats) {
+    if (!chat.title.toLowerCase().includes(query) && !chat.workspace.toLowerCase().includes(query)) continue;
+    if (!groups.has(chat.workspace)) groups.set(chat.workspace, []);
+    groups.get(chat.workspace).push(chat);
+  }
+  for (const [workspace, items] of groups) {
+    const heading = document.createElement('p');
+    heading.className = 'group-label';
+    heading.textContent = workspace === '.' ? 'Workspace root' : workspace;
+    historyList.append(heading);
+    for (const item of items) {
+      const entry = document.createElement('button');
+      entry.type = 'button';
+      entry.textContent = item.title;
+      entry.title = item.title;
+      entry.disabled = busy;
+      if (item === active) entry.setAttribute('aria-current', 'true');
+      entry.addEventListener('click', () => {
+        status.textContent = '';
+        showChat(item);
+      });
+      historyList.append(entry);
+    }
+  }
+}
+
+searchHistory.addEventListener('input', renderHistory);
+
+newChat.addEventListener('click', () => {
+  task.value = '';
+  status.textContent = '';
+  if (!host.value && host.options.length) host.selectedIndex = 0;
+  if (!folder.value.trim()) folder.value = '.';
+  showChat(null);
+  task.focus();
+});
+
+fetch('/options').then(async response => {
+  if (!response.ok) throw new Error('Could not load local options.');
+  const options = await response.json();
+  for (const value of options.hosts) host.add(new Option(labels[value], value));
+  for (const value of options.folders) {
+    const option = document.createElement('option');
+    option.value = value;
+    if (value === '.') option.label = 'Workspace root';
+    workspaceOptions.append(option);
+  }
+  folder.value = '.';
+  folder.title = options.root;
+  storageKey = 'aegis1-chats:' + options.root;
+  try {
+    const stored = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    chats = Array.isArray(stored) ? stored.filter(chat => chat && Array.isArray(chat.messages)) : [];
+    for (const chat of chats) if (!chat.id) chat.id = crypto.randomUUID();
+  } catch { chats = []; }
+  let lastActive = '';
+  try { lastActive = localStorage.getItem(storageKey + ':active') || ''; } catch {}
+  showChat(chats.find(chat => chat.id === lastActive && typeof chat.workspace === 'string') || null);
+  persist();
+  status.textContent = options.hosts.length ? '' : 'Install and sign in to Claude Code or Codex.';
+}).catch(error => { status.textContent = error.message; });
+
+folder.addEventListener('input', () => {
+  button.disabled = busy || !host.value || !folder.value.trim();
+});
+
+task.addEventListener('keydown', event => {
+  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+    event.preventDefault();
+    if (!button.disabled) form.requestSubmit();
+  }
+});
+
+form.addEventListener('submit', async event => {
+  event.preventDefault();
+  const text = task.value.trim();
+  if (!text || busy || !folder.value.trim() || !host.value) return;
+  const selectedHost = host.value;
+  const chat = active || {id: crypto.randomUUID(), host: selectedHost, workspace: folder.value.trim(),
+                          title: text.slice(0, 75), messages: []};
+  chat.host = selectedHost;
+  if (!active) chats.unshift(chat);
+  const history = chat.messages.filter(message => !message.local).slice(-6).map(message => ({
+    role: message.role, text: message.text.slice(0, 4000)
+  }));
+  const userMessage = {role: 'user', text};
+  chat.messages.push(userMessage);
+  busy = true;
+  task.value = '';
+  status.textContent = 'Running with ' + labels[selectedHost] + '…';
+  showChat(chat);
+  try {
+    const response = await fetch('/run', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({host: selectedHost, folder: chat.workspace, task: text, history})
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Discovery failed.');
+    const local = result.started === false;
+    userMessage.local = local;
+    chat.messages.push({
+      role: 'assistant', text: result.report, local,
+      label: local ? 'Aegis1' : labels[selectedHost] + ' · ' + (result.models.join(', ') || 'Host default model')
+    });
+    status.textContent = '';
+  } catch (error) {
+    userMessage.local = true;
+    status.textContent = error.message;
+  } finally {
+    busy = false;
+    showChat(chat);
+    persist();
+    task.focus();
+  }
+});
+</script>
+</html>

@@ -13,8 +13,9 @@ aegis1 = "aegis1.scripts.aegis1:main"
 
 [tool.hatch.build.targets.wheel.force-include]
 "scripts/aegis1.py" = "aegis1/scripts/aegis1.py"
+"scripts/aegis1_hosts.py" = "aegis1/scripts/aegis1_hosts.py"
 "agents/aegis1.md" = "aegis1/agents/aegis1.md"
 "skills/system-discovery" = "aegis1/skills/system-discovery"
 
 [tool.hatch.build.targets.sdist]
-include = ["/pyproject.toml", "/README.md", "/scripts/aegis1.py", "/agents/aegis1.md", "/skills/system-discovery"]
+include = ["/pyproject.toml", "/README.md", "/scripts/aegis1.py", "/scripts/aegis1_hosts.py", "/agents/aegis1.md", "/skills/system-discovery"]
