@@ -176,7 +176,7 @@ browseFolder.addEventListener('click', async () => {
   button.disabled = true;
   status.textContent = 'Choose a folder in the system dialog.';
   const controller = new AbortController();
-  const fallback = windowsHost ? setTimeout(() => controller.abort(), 6000) : null;
+  const fallback = windowsHost ? setTimeout(() => controller.abort(), 30000) : null;
   try {
     const response = await fetch('/pick-folder', {
       method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}', signal: controller.signal

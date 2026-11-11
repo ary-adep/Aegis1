@@ -34,21 +34,8 @@ def native_folder_dialog(root: Path) -> str | None:
         powershell = shutil.which("powershell.exe")
         if not powershell:
             raise OSError("Windows folder picker unavailable")
-        script = (
-            '[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); '
-            'Add-Type -AssemblyName System.Windows.Forms; '
-            '$dialog = New-Object System.Windows.Forms.FolderBrowserDialog; '
-            '$dialog.Description = "Select Aegis1 workspace"; '
-            '$dialog.SelectedPath = (Get-Location).ProviderPath; '
-            '$dialog.ShowNewFolderButton = $false; '
-            '$owner = New-Object System.Windows.Forms.Form; '
-            '$owner.TopMost = $true; $owner.ShowInTaskbar = $false; $owner.Opacity = 0; '
-            '$owner.Show(); '
-            'try { if ($dialog.ShowDialog($owner) -eq [System.Windows.Forms.DialogResult]::OK) '
-            '{ [Console]::WriteLine($dialog.SelectedPath) } } '
-            'finally { $dialog.Dispose(); $owner.Dispose() }'
-        )
-        command = [powershell, "-NoProfile", "-STA", "-Command", script]
+        command = [powershell, "-NoProfile", "-STA", "-File",
+                   str(SOURCE / "scripts/aegis1_pick_folder.ps1"), str(root)]
     elif sys.platform.startswith("linux"):
         if zenity := shutil.which("zenity"):
             command = [zenity, "--file-selection", "--directory",
