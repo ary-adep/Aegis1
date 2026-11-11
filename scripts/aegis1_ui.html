@@ -182,7 +182,10 @@ browseFolder.addEventListener('click', async () => {
     if (!response.ok) throw new Error(result.error || 'Could not select a folder.');
     status.textContent = '';
     if (result.status === 'selected') folder.value = result.path;
-    if (result.status === 'unavailable') {
+    if (result.status === 'pending') {
+      status.textContent = 'A system picker is still open. Press Esc in that dialog to close it.';
+    }
+    if (result.status === 'unavailable' || result.status === 'pending') {
       browser.showModal();
       browse('.');
     }

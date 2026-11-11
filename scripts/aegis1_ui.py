@@ -41,8 +41,12 @@ def native_folder_dialog(root: Path) -> str | None:
             '$dialog.Description = "Select Aegis1 workspace"; '
             '$dialog.SelectedPath = (Get-Location).ProviderPath; '
             '$dialog.ShowNewFolderButton = $false; '
-            'if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) '
-            '{ [Console]::WriteLine($dialog.SelectedPath) }'
+            '$owner = New-Object System.Windows.Forms.Form; '
+            '$owner.TopMost = $true; $owner.ShowInTaskbar = $false; $owner.Opacity = 0; '
+            '$owner.Show(); '
+            'try { if ($dialog.ShowDialog($owner) -eq [System.Windows.Forms.DialogResult]::OK) '
+            '{ [Console]::WriteLine($dialog.SelectedPath) } } '
+            'finally { $dialog.Dispose(); $owner.Dispose() }'
         )
         command = [powershell, "-NoProfile", "-STA", "-Command", script]
     elif sys.platform.startswith("linux"):
@@ -142,7 +146,7 @@ class DiscoveryUI(BaseHTTPRequestHandler):
             root = self.server.workspace_root
             if self.path == "/pick-folder":
                 if not FOLDER_DIALOG_LOCK.acquire(blocking=False):
-                    self.json_response(409, {"error": "A folder picker is already open."})
+                    self.json_response(200, {"status": "pending"})
                     return
                 try:
                     selected = native_folder_dialog(root)
