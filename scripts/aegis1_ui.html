@@ -81,7 +81,8 @@ button.citation { display: inline; background: transparent; color: var(--accent)
 <div><label for="folder">Workspace path</label>
 <div class="workspace-input">
 <input id="folder" form="composer" list="workspace-options" placeholder="Choose or enter a path" required>
-<button id="browse-folder" type="button" disabled>Browse</button></div>
+<button id="browse-folder" type="button" disabled>Browse</button>
+<button id="browse-here" type="button" hidden>Browse here</button></div>
 <datalist id="workspace-options"></datalist></div>
 <div><label for="host">Run with</label><select id="host" form="composer" required></select></div>
 <button id="toggle-evidence" type="button" aria-controls="evidence" aria-expanded="true">Hide evidence</button>
@@ -130,6 +131,8 @@ const conversation = document.querySelector('#conversation');
 
 const browser = document.querySelector('#folder-browser');
 const browseFolder = document.querySelector('#browse-folder');
+const browseHere = document.querySelector('#browse-here');
+let nativeRequest = null;
 const folderList = document.querySelector('#folder-list');
 const folderLocation = document.querySelector('#folder-location');
 const useFolder = document.querySelector('#use-folder');
@@ -170,12 +173,16 @@ async function browse(path) {
   }
 }
 
+browseHere.addEventListener('click', () => nativeRequest?.abort());
+
 browseFolder.addEventListener('click', async () => {
   browseFolder.disabled = true;
   newChat.disabled = true;
   button.disabled = true;
   status.textContent = 'Choose a folder in the system dialog.';
   const controller = new AbortController();
+  nativeRequest = controller;
+  browseHere.hidden = false;
   const fallback = windowsHost ? setTimeout(() => controller.abort(), 30000) : null;
   try {
     const response = await fetch('/pick-folder', {
@@ -202,6 +209,8 @@ browseFolder.addEventListener('click', async () => {
     }
   } finally {
     clearTimeout(fallback);
+    browseHere.hidden = true;
+    nativeRequest = null;
     browseFolder.disabled = Boolean(active) || busy;
     newChat.disabled = busy;
     folder.dispatchEvent(new Event('input'));
