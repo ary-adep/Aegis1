@@ -1,10 +1,15 @@
 """Local browser interface for read-only discovery through signed-in coding hosts."""
 
+from __future__ import annotations
+
 import argparse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
+import shutil
 import subprocess
+import sys
+from threading import Lock
 
 if __package__:
     from .aegis1_hosts import installed_hosts, run_read_only
@@ -13,6 +18,51 @@ else:
 
 SOURCE = Path(__file__).resolve().parents[1]
 MAX_REQUEST = 196_608
+FOLDER_DIALOG_LOCK = Lock()
+
+
+def native_folder_dialog(root: Path) -> str | None:
+    """Return a selected folder, None on cancel, or raise if unavailable."""
+    if sys.platform == "darwin":
+        command = [
+            "/usr/bin/osascript", "-e",
+            'on run argv\nreturn POSIX path of (choose folder with prompt "Select Aegis1 workspace" '
+            'default location (POSIX file (item 1 of argv) as alias))\nend run',
+            str(root),
+        ]
+    elif sys.platform == "win32":
+        powershell = shutil.which("powershell.exe")
+        if not powershell:
+            raise OSError("Windows folder picker unavailable")
+        script = (
+            '[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); '
+            'Add-Type -AssemblyName System.Windows.Forms; '
+            '$dialog = New-Object System.Windows.Forms.FolderBrowserDialog; '
+            '$dialog.Description = "Select Aegis1 workspace"; '
+            '$dialog.SelectedPath = (Get-Location).ProviderPath; '
+            '$dialog.ShowNewFolderButton = $false; '
+            'if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) '
+            '{ [Console]::WriteLine($dialog.SelectedPath) }'
+        )
+        command = [powershell, "-NoProfile", "-STA", "-Command", script]
+    elif sys.platform.startswith("linux"):
+        if zenity := shutil.which("zenity"):
+            command = [zenity, "--file-selection", "--directory",
+                       "--title=Select Aegis1 workspace", f"--filename={root}/"]
+        elif kdialog := shutil.which("kdialog"):
+            command = [kdialog, "--getexistingdirectory", str(root), "--title", "Select Aegis1 workspace"]
+        else:
+            raise OSError("Linux folder picker unavailable")
+    else:
+        raise OSError("Native folder picker unavailable")
+    result = subprocess.run(command, cwd=root, capture_output=True, text=True,
+                            encoding="utf-8", errors="replace", timeout=120)
+    if result.returncode:
+        if (sys.platform == "darwin" and "(-128)" in result.stderr
+                or sys.platform.startswith("linux") and result.returncode == 1 and not result.stderr.strip()):
+            return None
+        raise OSError("Native folder picker unavailable")
+    return result.stdout.rstrip("\r\n") or None
 
 
 def run_discovery(host, executable, repo, task, history=()):
@@ -81,7 +131,7 @@ class DiscoveryUI(BaseHTTPRequestHandler):
                 or self.headers.get_content_type() != "application/json"):
             self.send_error(403)
             return
-        if self.path not in {"/run", "/source", "/folders"}:
+        if self.path not in {"/run", "/source", "/folders", "/pick-folder"}:
             self.send_error(404)
             return
         try:
@@ -90,6 +140,25 @@ class DiscoveryUI(BaseHTTPRequestHandler):
                 raise ValueError("Invalid request size.")
             payload = json.loads(self.rfile.read(length))
             root = self.server.workspace_root
+            if self.path == "/pick-folder":
+                if not FOLDER_DIALOG_LOCK.acquire(blocking=False):
+                    self.json_response(409, {"error": "A folder picker is already open."})
+                    return
+                try:
+                    selected = native_folder_dialog(root)
+                except (OSError, subprocess.TimeoutExpired):
+                    self.json_response(200, {"status": "unavailable"})
+                    return
+                finally:
+                    FOLDER_DIALOG_LOCK.release()
+                if selected is None:
+                    self.json_response(200, {"status": "cancelled"})
+                    return
+                path = Path(selected).resolve(strict=True)
+                if not path.is_relative_to(root) or not path.is_dir():
+                    raise ValueError("Select a directory inside the configured workspace root.")
+                self.json_response(200, {"status": "selected", "path": str(path)})
+                return
             selection = payload["folder"]
             if not isinstance(selection, str) or not selection.strip():
                 raise ValueError("Enter a workspace path.")

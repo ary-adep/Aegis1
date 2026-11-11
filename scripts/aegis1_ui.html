@@ -169,9 +169,30 @@ async function browse(path) {
   }
 }
 
-browseFolder.addEventListener('click', () => {
-  browser.showModal();
-  browse('.');
+browseFolder.addEventListener('click', async () => {
+  browseFolder.disabled = true;
+  newChat.disabled = true;
+  button.disabled = true;
+  status.textContent = 'Choose a folder in the system dialog.';
+  try {
+    const response = await fetch('/pick-folder', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Could not select a folder.');
+    status.textContent = '';
+    if (result.status === 'selected') folder.value = result.path;
+    if (result.status === 'unavailable') {
+      browser.showModal();
+      browse('.');
+    }
+  } catch (error) {
+    status.textContent = error.message;
+  } finally {
+    browseFolder.disabled = Boolean(active) || busy;
+    newChat.disabled = busy;
+    folder.dispatchEvent(new Event('input'));
+  }
 });
 
 parentFolder.addEventListener('click', () => {

@@ -254,7 +254,7 @@ python3 scripts/aegis1_ui.py --workspace-root "$HOME/Desktop/Aravind"
 
 Open the loopback URL printed in the terminal. Select Claude Code or Codex,
 browse for a workspace, choose a suggestion, or enter a relative or absolute folder path
-inside the configured workspace root, and start a read-only chat. Each chat keeps its
+inside the configured workspace root, and start a read-only chat. Browse opens\nthe system picker on macOS and Windows, and uses Zenity or KDialog on\nLinux when available. A browser-based picker is available as a fallback. Each chat keeps its
 workspace. Switch hosts between messages, or use New chat to change the
 workspace. Select a saved chat in History to resume it or use Delete to remove it from this browser. Copy saves an
 individual response to the clipboard as Markdown. Follow-up requests
