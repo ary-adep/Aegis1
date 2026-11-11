@@ -253,10 +253,10 @@ python3 scripts/aegis1_ui.py --workspace-root "$HOME/Desktop/Aravind"
 ```
 
 Open the loopback URL printed in the terminal. Select Claude Code or Codex,
-choose a suggested workspace or enter a relative or absolute folder path
+browse for a workspace, choose a suggestion, or enter a relative or absolute folder path
 inside the configured workspace root, and start a read-only chat. Each chat keeps its
 workspace. Switch hosts between messages, or use New chat to change the
-workspace. Select a saved chat in History to resume it. Copy saves an
+workspace. Select a saved chat in History to resume it or use Delete to remove it from this browser. Copy saves an
 individual response to the clipboard as Markdown. Follow-up requests
 include the last six non-local messages, with each capped at 4,000
 characters. History is stored by the browser for this URL and workspace

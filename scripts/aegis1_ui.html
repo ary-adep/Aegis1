@@ -62,13 +62,26 @@ button.citation { display: inline; background: transparent; color: var(--accent)
 .source-focus { background: #304b70; color: #fff; }
 @media (max-width: 1000px) { .layout { grid-template-columns: 190px minmax(0,1fr) 245px; } .layout.evidence-hidden { grid-template-columns: 190px minmax(0,1fr); } }
 @media (max-width: 760px) { main { height: auto; min-height: 100dvh; } .layout, .layout.evidence-hidden { grid-template-columns: minmax(0,1fr); } .sidebar, .evidence { border: 0; border-bottom: 1px solid var(--border); } .history { max-height: 105px; overflow: auto; } .chat { height: 72vh; } }
+.workspace-input { display: flex; gap: 6px; }
+.workspace-input input { min-width: 0; }
+#folder-browser { width: min(540px, 94vw); border: 1px solid var(--border); border-radius: 12px; padding: 18px; background: #171d27; color: inherit; }
+#folder-browser::backdrop { background: #080b10aa; }
+#folder-location { overflow-wrap: anywhere; margin: 10px 0; }
+#folder-list { display: grid; gap: 5px; max-height: 40vh; overflow: auto; margin: 10px 0; }
+#folder-list button { text-align: left; }
+.folder-actions { display: flex; justify-content: space-between; gap: 8px; }
+.chat-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px; }
+.history .delete-chat { width: auto; color: var(--muted); padding-inline: 6px; }
+.history .delete-chat:hover { color: #ffb2b2; }
 </style>
 <main>
 <header>
 <div class="brand"><h1>Aegis1</h1><span class="muted">Discovery workspace</span></div>
 <div class="controls">
 <div><label for="folder">Workspace path</label>
+<div class="workspace-input">
 <input id="folder" form="composer" list="workspace-options" placeholder="Choose or enter a path" required>
+<button id="browse-folder" type="button" disabled>Browse</button></div>
 <datalist id="workspace-options"></datalist></div>
 <div><label for="host">Run with</label><select id="host" form="composer" required></select></div>
 <button id="toggle-evidence" type="button" aria-controls="evidence" aria-expanded="true">Hide evidence</button>
@@ -95,6 +108,16 @@ button.citation { display: inline; background: transparent; color: var(--accent)
 </aside>
 </div>
 </main>
+<dialog id="folder-browser" aria-labelledby="folder-browser-title">
+<h2 id="folder-browser-title">Select workspace folder</h2>
+<p id="folder-location" role="status"></p>
+<button id="parent-folder" type="button">Up one folder</button>
+<div id="folder-list"></div>
+<div class="folder-actions">
+<form method="dialog"><button>Cancel</button></form>
+<button id="use-folder" type="button">Select folder</button>
+</div>
+</dialog>
 <script>
 const form = document.querySelector('#composer');
 const host = document.querySelector('#host');
@@ -104,6 +127,64 @@ const task = document.querySelector('#task');
 const button = form.querySelector('button');
 const status = document.querySelector('#status');
 const conversation = document.querySelector('#conversation');
+
+const browser = document.querySelector('#folder-browser');
+const browseFolder = document.querySelector('#browse-folder');
+const folderList = document.querySelector('#folder-list');
+const folderLocation = document.querySelector('#folder-location');
+const useFolder = document.querySelector('#use-folder');
+const parentFolder = document.querySelector('#parent-folder');
+let browsed = null;
+let browseRequest = 0;
+
+async function browse(path) {
+  const request = ++browseRequest;
+  browsed = null;
+  useFolder.disabled = true;
+  parentFolder.disabled = true;
+  folderLocation.textContent = 'Loading folders…';
+  folderList.replaceChildren();
+  try {
+    const response = await fetch('/folders', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({folder: path})
+    });
+    const result = await response.json();
+    if (request !== browseRequest) return;
+    if (!response.ok) throw new Error(result.error || 'Could not open folder.');
+    browsed = result;
+    folderLocation.textContent = result.location;
+    useFolder.disabled = false;
+    parentFolder.disabled = result.parent === null;
+    for (const entry of result.children) {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.textContent = entry.name;
+      item.addEventListener('click', () => browse(entry.path));
+      folderList.append(item);
+    }
+    if (!result.children.length) folderList.textContent = 'No subfolders.';
+  } catch (error) {
+    if (request === browseRequest) folderLocation.textContent = error.message;
+  }
+}
+
+browseFolder.addEventListener('click', () => {
+  browser.showModal();
+  browse('.');
+});
+
+parentFolder.addEventListener('click', () => {
+  if (browsed?.parent !== null && browsed) browse(browsed.parent);
+});
+
+useFolder.addEventListener('click', () => {
+  if (!browsed) return;
+  folder.value = browsed.path;
+  folder.dispatchEvent(new Event('input'));
+  browser.close();
+});
+
 const labels = {claude: 'Claude Code', codex: 'Codex · ChatGPT'};
 
 
@@ -260,6 +341,7 @@ function showChat(chat) {
   }
   host.disabled = busy;
   folder.disabled = Boolean(chat) || busy;
+  browseFolder.disabled = Boolean(chat) || busy;
   button.disabled = busy || !host.value || !folder.value.trim();
   newChat.disabled = busy;
   if (storageKey) {
@@ -351,7 +433,28 @@ function renderHistory() {
         status.textContent = '';
         showChat(item);
       });
-      historyList.append(entry);
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'delete-chat';
+      remove.textContent = 'Delete';
+      remove.disabled = busy;
+      remove.setAttribute('aria-label', 'Delete chat: ' + item.title);
+      remove.addEventListener('click', () => {
+        if (!window.confirm('Delete this chat from this browser?')) return;
+        chats = chats.filter(candidate => candidate !== item);
+        persist();
+        if (item === active) {
+          status.textContent = '';
+          task.value = '';
+          showChat(null);
+        } else {
+          renderHistory();
+        }
+      });
+      const row = document.createElement('div');
+      row.className = 'chat-row';
+      row.append(entry, remove);
+      historyList.append(row);
     }
   }
 }

@@ -81,7 +81,7 @@ class DiscoveryUI(BaseHTTPRequestHandler):
                 or self.headers.get_content_type() != "application/json"):
             self.send_error(403)
             return
-        if self.path not in {"/run", "/source"}:
+        if self.path not in {"/run", "/source", "/folders"}:
             self.send_error(404)
             return
         try:
@@ -96,6 +96,20 @@ class DiscoveryUI(BaseHTTPRequestHandler):
             repo = (root / Path(selection.strip()).expanduser()).resolve(strict=True)
             if not repo.is_relative_to(root) or not repo.is_dir():
                 raise ValueError("Choose a directory inside the configured workspace root.")
+            if self.path == "/folders":
+                children = [
+                    {"name": path.name, "path": path.relative_to(root).as_posix()}
+                    for path in sorted(repo.iterdir(), key=lambda path: path.name.casefold())
+                    if not path.name.startswith(".") and path.is_dir()
+                    and path.resolve() == path
+                ]
+                self.json_response(200, {
+                    "path": repo.relative_to(root).as_posix(),
+                    "location": str(repo),
+                    "parent": repo.parent.relative_to(root).as_posix() if repo != root else None,
+                    "children": children,
+                })
+                return
             if self.path == "/source":
                 name = Path(payload["path"])
                 path = (repo / name).resolve(strict=True)
