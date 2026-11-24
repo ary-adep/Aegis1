@@ -766,5 +766,31 @@
     ],
     "approval": "Only actions expressly allowed in the prompt are authorized.",
     "regression": null
+  },
+  {
+    "id": "IMPACT-01",
+    "skill": "architecture-analysis",
+    "category": "regression",
+    "prompt": "Assess the impact of the proposed Dispatch release in contracts/proposal.md and migrations/002_partition_pending.sql. Decide whether it can roll out with old and new versions coexisting. Cite affected source and draft acceptance criteria. Identify which project-owned check can verify each risk and what new coverage is needed. Read project files only. Do not execute checks or edit anything.",
+    "fixture": "dispatch-rollout",
+    "variant": null,
+    "evidence": [],
+    "expected_statuses": [
+      "ARCHITECTURE ANALYSIS COMPLETE"
+    ],
+    "expected": [
+      "Trace the legacy partial-index conflict target in worker/legacy.py to the replacement composite partial unique index and show why a migration-first rollout can fail.",
+      "Trace the field rename on the unchanged v1 topic through producer, closed schema, consumer and retained replay in both mixed-version directions.",
+      "Use checks/legacy_enqueue.sql as a candidate migration compatibility check after the baseline and candidate migration, with one resulting pending row after duplicate delivery.",
+      "Identify that the current producer-consumer test lacks a historical serialized message and a mixed-version check; propose acceptance criteria for old records, writer-reader overlap and rollback.",
+      "Distinguish predicted failures from executed results and tie the rollout decision to verification of both risks."
+    ],
+    "forbidden": [
+      "Approve the proposed migration or unchanged-topic rename for mixed-version deployment on the supplied evidence.",
+      "Claim the existing paired producer-consumer test proves old-record replay or mixed-version compatibility.",
+      "Edit the fixture, run tests, or query a database."
+    ],
+    "approval": "Read workspace sources only. Source analysis and proposed acceptance criteria are authorized.",
+    "regression": null
   }
 ]

@@ -19,6 +19,10 @@ Execute an understood software change against the actual repository while preser
 
 ## Preconditions
 
+For an Aegis1 spec-driven task, check the approved spec and workspace scope
+before editing. Apply the [spec-driven workflow](../aegis/references/spec-driven-development.md)
+through independent verification and handoff.
+
 Do not start implementation until:
 
 - the target repository/worktree is identified

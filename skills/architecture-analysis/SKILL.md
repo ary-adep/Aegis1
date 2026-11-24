@@ -39,7 +39,19 @@ Use for:
 8. Escalate consequential architectural decisions to the human.
 9. Analyze CAP only when distributed state, replication, or partition behavior can affect correctness or availability.
 
-## Workflow
+## Choose the scope
+
+For a specific read-only question, inspect the affected source and constraints,
+assess the relevant boundary, and cross-check material claims. Expand if the
+evidence reveals consequential risk or a wider dependency that can change the
+answer. Keep narrow assessments inline.
+
+For schema or event changes, always use the [change-impact workflow](references/change-impact.md)
+to assess affected dependencies, mixed-version rollout and rollback, and
+decisive verification. Preserve consequential human decisions and distinguish
+source predictions from observed results.
+
+## Broad assessment
 
 - [ ] Establish architectural scope.
 - [ ] Confirm relevant requirements and constraints.
@@ -59,7 +71,8 @@ Use for:
 
 ## Architecture dimensions
 
-Use [architecture-dimensions.md](references/architecture-dimensions.md).
+Read [architecture-dimensions.md](references/architecture-dimensions.md) for a
+broad assessment or when a specific architectural dimension requires it.
 
 For distributed consistency and CAP analysis use [distributed-consistency.md](references/distributed-consistency.md).
 
@@ -83,23 +96,11 @@ Do not reduce the architecture to a simplistic "choose two of three" statement.
 
 ## Output
 
-Report:
-
-1. Scope and evidence.
-2. Current/proposed architecture.
-3. Important boundaries.
-4. Dependencies and communication.
-5. Data ownership and consistency.
-6. API/contract implications.
-7. Security.
-8. Reliability/failure behavior.
-9. Performance/scalability.
-10. Observability/operations.
-11. Distributed-system trade-offs when applicable.
-12. Risks and constraints.
-13. Viable options/trade-offs.
-14. Human decisions required.
-15. Unknowns/evidence gaps.
+Lead with the answer or release decision. Cite the decisive evidence and
+give the next action or check. Include material risks, options and trade-offs,
+unknowns, and human decisions where relevant. For consequential changes,
+include the affected compatibility surfaces and the acceptance checks needed
+before handoff. Organize broader assessments around the relevant dimensions.
 
 ## Terminal statuses
 

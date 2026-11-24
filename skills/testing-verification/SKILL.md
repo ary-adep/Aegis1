@@ -78,6 +78,12 @@ When relevant, verify:
 
 Do not test a CAP behavior that the architecture does not actually claim to support.
 
+For ordering claims, distinguish a logical event from the records produced
+by replay. Identify the topic, partition, and ordering scope. A shared key
+alone cannot establish ordering across topics. For retry and dead-letter
+claims, distinguish handler configuration, observed routing, retry count,
+and failure of the dead-letter publication.
+
 ## Feedback loop
 
 If a verification step fails:

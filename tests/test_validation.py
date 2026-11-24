@@ -130,17 +130,26 @@ class EvaluationChecks(unittest.TestCase):
         record = json.loads((output / 'result.json').read_text(encoding='utf-8'))
         self.assertEqual(validate_record(record, self.cases['DISC-01'], output), [])
         self.assertEqual(record['result'], 'NOT_RUN')
+        self.assertEqual(record['schema_version'], 2)
 
     def scored_record(self):
         case = self.cases['DISC-01']
         output = prepare(case, self.directory / 'scored')
         record = json.loads((output / 'result.json').read_text(encoding='utf-8'))
         # Synthetic data tests record validation only; never a model run.
-        record.update(model='synthetic-test-model', model_version='fixture-version', claude_code_version='fixture-version',
+        record.update(workflow='aegis1', host='claude-code', host_version='fixture-version',
+                      model='synthetic-test-model', model_version='fixture-version',
+                      fixture_revision='a' * 40, elapsed_ms=123,
+                      usage={'input_tokens': 100, 'output_tokens': 30, 'cached_input_tokens': None},
+                      usage_notes='Synthetic usage; cache count unavailable.',
+                      effective_permissions='permissions.json',
+                      independent_verification='verification.txt',
                       executed=True, result='PASS', terminal_status='DISCOVERY COMPLETE', reviewer='unit-test',
                       observations='Synthetic record tests format only.', transcript='transcript.txt', workspace_after='after.json')
         (output / 'transcript.txt').write_text('Synthetic transcript\nDISCOVERY COMPLETE\n', encoding='utf-8')
         (output / 'after.json').write_text('{}', encoding='utf-8')
+        (output / 'permissions.json').write_text('{"fixture_only": true}', encoding='utf-8')
+        (output / 'verification.txt').write_text('Synthetic verification evidence.', encoding='utf-8')
         for check in record['checks']:
             check.update(satisfied=True, evidence=['transcript.txt#1'])
         return case, output, record
@@ -148,6 +157,93 @@ class EvaluationChecks(unittest.TestCase):
     def test_complete_record_format_is_accepted(self):
         case, output, record = self.scored_record()
         self.assertEqual(validate_record(record, case, output), [])
+
+    def test_evidence_gate_requires_a_valid_current_pass(self):
+        _, output, record = self.scored_record()
+        path = output / 'result.json'
+        command = [sys.executable, '-B', str(ROOT / 'scripts/evaluate.py'), 'check-record', str(path)]
+        receipt = output / 'receipt.json'
+        seal = [*command[:3], 'seal-record', str(path), str(receipt)]
+        path.write_text(json.dumps(record), encoding='utf-8')
+        subprocess.run(seal, capture_output=True, text=True, timeout=10, check=True)
+        unsealed = subprocess.run([*command, '--require-pass'], capture_output=True, text=True, timeout=10)
+        self.assertEqual(unsealed.returncode, 1)
+        self.assertIn('requires a verified receipt', unsealed.stdout)
+        records = (
+            (record, True),
+            ({**record, 'result': 'FAIL'}, False),
+            ({**record, 'result': 'BLOCKED'}, False),
+            ({**record, 'result': 'NOT_RUN', 'executed': False}, False),
+            ({**record, 'schema_version': 1, 'claude_code_version': 'fixture-version'}, False),
+            ({**record, 'independent_verification': 'missing.txt'}, False),
+        )
+        for candidate, expected in records:
+            with self.subTest(candidate=candidate['result'], schema=candidate['schema_version']):
+                path.write_text(json.dumps(candidate), encoding='utf-8')
+                result = subprocess.run([*command, '--receipt', str(receipt), '--require-pass'],
+                                        capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, 0 if expected else 1, result.stderr)
+                self.assertIs(json.loads(result.stdout)['passes_evidence_gate'], expected)
+
+    def test_receipt_detects_changed_transcript_snapshot_and_criterion_artifacts(self):
+        _, output, record = self.scored_record()
+        (output / 'criterion.txt').write_text('criterion evidence', encoding='utf-8')
+        record['checks'][0]['evidence'] = ['criterion.txt#1']
+        path = output / 'result.json'
+        receipt = output / 'receipt.json'
+        path.write_text(json.dumps(record), encoding='utf-8')
+        prefix = [sys.executable, '-B', str(ROOT / 'scripts/evaluate.py')]
+        seal = [*prefix, 'seal-record', str(path), str(receipt)]
+        subprocess.run(seal, capture_output=True, text=True, timeout=10, check=True)
+        original_receipt = receipt.read_bytes()
+        self.assertNotEqual(subprocess.run(seal, capture_output=True, timeout=10).returncode, 0)
+        self.assertEqual(receipt.read_bytes(), original_receipt)
+        command = [*prefix, 'check-record', str(path), '--receipt', str(receipt), '--require-pass']
+        for name in ('transcript.txt', 'baseline.json', 'after.json', 'verification.txt', 'criterion.txt'):
+            with self.subTest(artifact=name):
+                artifact = output / name
+                original = artifact.read_bytes()
+                artifact.write_bytes(original + b' changed')
+                result = subprocess.run(command, capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, 1)
+                self.assertIn(f'evidence changed: {name}', json.loads(result.stdout)['errors'])
+                artifact.write_bytes(original)
+        (output / 'criterion.txt').unlink()
+        result = subprocess.run(command, capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('path missing: criterion.txt', json.loads(result.stdout)['errors'])
+
+    def test_native_record_can_use_a_non_git_fixture(self):
+        case, output, record = self.scored_record()
+        record.update(workflow='native', host='codex', fixture_revision=None)
+        self.assertEqual(validate_record(record, case, output), [])
+
+    def test_legacy_record_still_validates(self):
+        case, output, record = self.scored_record()
+        legacy_fields = ('case_id', 'model', 'model_version', 'skill_snapshot', 'agent_snapshot',
+                         'executed', 'result', 'terminal_status', 'transcript', 'workspace_after',
+                         'reviewer', 'observations', 'checks')
+        legacy = {key: record[key] for key in legacy_fields}
+        legacy['claude_code_version'] = 'fixture-version'
+        self.assertEqual(validate_record(legacy, case, output), [])
+
+    def test_invalid_baseline_metadata_is_rejected(self):
+        case, output, record = self.scored_record()
+        invalid_values = {
+            'schema_version': True,
+            'workflow': 'invalid',
+            'host_version': '',
+            'fixture_revision': 'abcdef',
+            'elapsed_ms': True,
+            'usage_notes': '',
+            'usage': {'input_tokens': 10, 'output_tokens': 5, 'cached_input_tokens': 11},
+            'workspace_before': 'missing.json',
+            'effective_permissions': '../outside.json',
+            'independent_verification': 'missing.txt',
+        }
+        for key, value in invalid_values.items():
+            with self.subTest(field=key):
+                self.assertTrue(validate_record({**record, key: value}, case, output))
 
     def test_pass_without_execution_is_rejected(self):
         case, output, record = self.scored_record()

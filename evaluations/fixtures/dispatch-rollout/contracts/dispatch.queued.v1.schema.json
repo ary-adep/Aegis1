@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "ticketRef": {"type": "string"}
+  },
+  "required": ["ticketRef"],
+  "additionalProperties": false
+}

@@ -2,9 +2,24 @@
 
 Aegis1 is a governed software engineering agent for Claude Code. It routes work through eight specialists while preserving evidence, user work, human Git ownership, and production boundaries.
 
+The development target is for Aegis1 to own bounded engineering tasks from
+investigation through independent verification and an evidence-backed handoff.
+Humans retain consequential decisions and release authority. Expansion of the
+agent's scope depends on measured results against native workflows.
+
 ## Current status
 
-This is a supervised pilot, not a production-certified developer replacement. It contains audited instructions, local structural checks, and evaluation fixtures. User-supplied Claude transcripts demonstrate feature implementation and review on a small Spring Boot application (148 application tests reported passing, with selected user-run MySQL smoke checks). Those observations are not a completed model evaluation matrix. The latest documentation-skill patch still needs a fresh-session behavioral retest. Kafka/Redis microservices and installation on another laptop remain unvalidated. Historical audit documents describe their dated scope, not the current installation state. See [audit findings](evaluations/audit-report.md), [validation results](evaluations/validation-results.md), and [evaluation instructions](evaluations/README.md).
+This is a supervised pilot with audited instructions, local structural checks,
+and evaluation fixtures. User-supplied Claude transcripts describe implementation
+and review on a small Spring Boot application. Provisional comparisons on the
+Kafka/Redis lab favored native Claude on verification accuracy and rollout safety.
+The model evaluation matrix remains open. See [audit findings](evaluations/audit-report.md),
+[validation results](evaluations/validation-results.md), and
+[evaluation instructions](evaluations/README.md).
+
+The [ECC integration audit and rollout](docs/ecc/README.md) records the pinned
+upstream baseline, capability dispositions, dependency matrix, and current
+development freeze.
 
 ## Install into a Claude Code project
 
@@ -54,7 +69,26 @@ Project scope uses the project's `.claude/` directory. Personal scope uses
 a fresh session, confirm `aegis1` appears in `/agents`, and run a read-only
 `/aegis` discovery test.
 
+Preview a Claude Code installation or inspect Codex configuration before
+making changes:
+
+```sh
+python3 -B install-aegis.py --project "/path/to/project" --plan
+python3 -B install-aegis.py --project "/path/to/project" --plan --host codex
+```
+
+Claude Code previews show additions, managed updates, unchanged files,
+legacy links that would be backed up, and conflicts. An unversioned conflict
+requires interactive approval for installation. A versioned conflict blocks
+installation. Applying an install rechecks the current files. The Codex
+preview reports existing configuration paths and available Aegis1 workflow
+entry points. This installer has no Codex installation mode.
+
 ## Use
+
+For a spec-driven change, use the [SDD workflow](docs/sdd.md) to trace
+requirements to acceptance criteria, record human approval of exact file
+scope, and check independent verification evidence before handoff.
 
 ```text
 /aegis Discover this repository and explain the request-to-storage flow. Do not edit files.

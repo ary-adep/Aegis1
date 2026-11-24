@@ -5,5 +5,5 @@
   "installation_smoke_tests": [],
   "working_tree_integration_runs": [],
   "real_work_observations": [],
-  "reason": "The intended Claude models were not specified and no Claude runtime was found on this session's command path. No model behavior is claimed as validated."
+  "reason": "The intended hosts and models have not been approved for this baseline. The matrix contains no scored live runs."
 }

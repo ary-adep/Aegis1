@@ -24,12 +24,15 @@ class MemoryChecks(unittest.TestCase):
             (self.project / name).write_text(name, encoding='utf-8')
         self.store = self.home / '.aegis1' / 'memory.sqlite3'
 
-    def run_memory(self, *args, ok=True):
-        env = dict(os.environ, HOME=str(self.home), USERPROFILE=str(self.home))
-        result = subprocess.run([sys.executable, '-B', str(MEMORY), '--project', str(self.project), *args],
-                                capture_output=True, text=True, env=env, timeout=30)
+    def run_memory(self, *args, ok=True, project=None):
+        result = self.memory_process(*args, project=project)
         self.assertEqual(result.returncode == 0, ok, result.stderr)
-        return json.loads(result.stdout) if ok else result.stderr
+        return json.loads(result.stdout) if ok else result.stderr.decode()
+
+    def memory_process(self, *args, project=None):
+        env = dict(os.environ, HOME=str(self.home), USERPROFILE=str(self.home))
+        return subprocess.run([sys.executable, '-B', str(MEMORY), '--project', str(project or self.project), *args],
+                              capture_output=True, env=env, timeout=30)
 
     def save(self, *sources):
         args = [arg for source in sources for arg in ('--source', source)]
@@ -113,6 +116,112 @@ class MemoryChecks(unittest.TestCase):
         self.legacy_record()
         self.assertEqual(self.run_memory('delete', 'legacy'), {'deleted': True})
         self.assertEqual(self.recall(), {})
+
+    def test_explicit_transfer_preserves_fingerprints_and_destination_scope(self):
+        selected = self.save('b.txt', 'a.txt')
+        self.save('a.txt')
+        bundle = self.project.parent / 'transfer.json'
+        target = self.project.parent / 'other-checkout'
+        target.mkdir()
+        for name in ('a.txt', 'b.txt'):
+            (target / name).write_text(name, encoding='utf-8')
+        self.assertEqual(self.run_memory('recall', project=target), [])
+        self.assertEqual(self.run_memory('export', '--id', selected, '--output', str(bundle)), {'exported': 1})
+        self.assertNotIn(str(self.project), bundle.read_text(encoding='utf-8'))
+        self.assertIn('unavailable in this project', self.run_memory(
+            'export', '--id', selected, '--output', str(bundle), project=target, ok=False))
+        initial = self.run_memory('import', str(bundle), project=target)
+        imported = initial['findings'][0]['id']
+        self.assertEqual(initial['imported'], 1)
+        self.assertFalse(initial['findings'][0]['stale'])
+        self.assertEqual(self.run_memory('recall', project=target)[0]['sources'], ['b.txt', 'a.txt'])
+        self.assertNotIn(imported, self.recall())
+        (target / 'a.txt').write_text('different', encoding='utf-8')
+        duplicate = self.run_memory('import', str(bundle), project=target)
+        self.assertEqual(duplicate['already_present'], 1)
+        self.assertEqual(duplicate['findings'], [{'id': imported, 'stale': True}])
+        self.assertTrue(self.run_memory('recall', project=target)[0]['stale'])
+
+    def test_invalid_bundle_import_is_atomic(self):
+        record_id = self.save('a.txt')
+        bundle = self.project.parent / 'transfer.json'
+        self.run_memory('export', '--id', record_id, '--output', str(bundle))
+        original = bundle.read_bytes()
+        self.run_memory('export', '--id', record_id, '--output', str(bundle), ok=False)
+        self.assertEqual(bundle.read_bytes(), original)
+        content = json.loads(original)
+        content['findings'].append({'finding': 'invalid', 'sources': [
+            {'path': '../outside.txt', 'sha256': '0' * 64}]})
+        bundle.write_text(json.dumps(content), encoding='utf-8')
+        self.assertIn('portable relative source path', self.run_memory('import', str(bundle), ok=False))
+        self.assertEqual(set(self.recall()), {record_id})
+
+    def test_only_approved_current_lessons_are_recalled(self):
+        record_id = self.save('a.txt', 'b.txt')
+        proposal = self.run_memory('propose-lesson', '--finding-id', record_id, '--lesson', 'Check both inputs')
+        rejected = self.run_memory('propose-lesson', '--finding-id', record_id, '--lesson', 'Other advice')
+        self.assertEqual(proposal['status'], 'pending')
+        self.assertEqual(self.run_memory('recall-lessons'), [])
+        self.run_memory('review-lesson', rejected['id'], '--decision', 'reject', '--by', 'Owner')
+        self.run_memory('review-lesson', proposal['id'], '--decision', 'approve', '--by', 'Owner')
+        self.assertEqual([lesson['id'] for lesson in self.run_memory('recall-lessons')], [proposal['id']])
+        self.assertEqual({lesson['status'] for lesson in self.run_memory('list-lessons')}, {'approved', 'rejected'})
+        (self.project / 'b.txt').write_text('changed', encoding='utf-8')
+        self.assertEqual(self.run_memory('recall-lessons'), [])
+        self.assertTrue(all(lesson['stale'] for lesson in self.run_memory('list-lessons')))
+        self.run_memory('delete', record_id)
+        self.assertEqual(self.run_memory('list-lessons'), [])
+        with closing(sqlite3.connect(self.store)) as db:
+            self.assertEqual(db.execute('SELECT count(*) FROM lessons').fetchone(), (0,))
+
+    def test_review_rejects_cross_project_stale_and_repeated_decisions(self):
+        record_id = self.save('a.txt')
+        proposal = self.run_memory('propose-lesson', '--finding-id', record_id, '--lesson', 'Check source')
+        other = self.project.parent / 'other'
+        other.mkdir()
+        approve = ('review-lesson', proposal['id'], '--decision', 'approve', '--by', 'Owner')
+        self.assertIn('No pending lesson', self.run_memory(*approve, project=other, ok=False))
+        self.assertEqual(self.run_memory('list-lessons', project=other), [])
+        (self.project / 'a.txt').write_text('different', encoding='utf-8')
+        self.assertIn('stale evidence', self.run_memory(*approve, ok=False))
+        self.assertIn('current finding', self.run_memory(
+            'propose-lesson', '--finding-id', record_id, '--lesson', 'Try again', ok=False))
+        (self.project / 'a.txt').write_text('a.txt', encoding='utf-8')
+        self.run_memory(*approve)
+        self.assertIn('No pending lesson', self.run_memory(*approve, ok=False))
+
+
+    def test_context_preview_filters_ranks_and_bounds_output(self):
+        def lesson(source, content, decision='approve'):
+            proposal = self.run_memory('propose-lesson', '--finding-id', self.save(source), '--lesson', content)
+            if decision:
+                self.run_memory('review-lesson', proposal['id'], '--decision', decision, '--by', 'Owner')
+            return proposal['id']
+
+        short = lesson('a.txt', 'Check payment')
+        long = lesson('a.txt', 'Check payment retries ' + 'é' * 60)
+        lesson('a.txt', 'Check payment retries pending', None)
+        lesson('a.txt', 'Check payment retries rejected', 'reject')
+        lesson('a.txt', 'Check customer records')
+        lesson('b.txt', 'Check payment retries stale')
+        (self.project / 'b.txt').write_text('changed', encoding='utf-8')
+        before = self.store.read_bytes()
+        args = ('preview-context', '--task', 'PAYMENT retries')
+        preview = self.run_memory(*args)
+        self.assertEqual([entry['id'] for entry in preview], [long, short])
+        self.assertEqual(preview[0]['matched_terms'], ['payment', 'retries'])
+        self.assertEqual(preview[0]['sources'], ['a.txt'])
+        result = self.memory_process(*args, '--max-bytes', '256')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertLessEqual(len(result.stdout), 256)
+        self.assertEqual([entry['id'] for entry in json.loads(result.stdout)], [short])
+        self.assertEqual(self.run_memory(*args, '--max-lessons', '1'), preview[:1])
+        self.assertEqual(self.run_memory(*args, project=self.home), [])
+        self.assertEqual(self.store.read_bytes(), before)
+
+    def test_context_preview_without_memory_does_not_create_store(self):
+        self.assertEqual(self.run_memory('preview-context', '--task', 'payment'), [])
+        self.assertFalse(self.store.parent.exists())
 
 
 if __name__ == '__main__':
