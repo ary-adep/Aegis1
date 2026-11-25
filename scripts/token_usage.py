@@ -1,93 +1,120 @@
-"""Summarize token counters from one explicitly supplied host JSONL log.
-
-Claude message deduplication and cache accounting are adapted from ECC 2.2.3
-scripts/hooks/cost-tracker.js at 4adeee6732a12d1540f49a4d50a38ce8c97f9a53.
-Copyright (c) 2026 Affaan Mustafa. See docs/ecc/LICENSE-ECC.
-"""
+"""Report token usage from an explicitly selected Claude Code or Codex log."""
 
 import json
 
-FIELDS = ('input_tokens', 'cached_input_tokens', 'output_tokens', 'cache_write_input_tokens')
+INPUT = 'input_tokens'
+CACHED = 'cached_input_tokens'
+OUTPUT = 'output_tokens'
+WRITTEN = 'cache_write_input_tokens'
+COUNTERS = (INPUT, CACHED, OUTPUT, WRITTEN)
 MAX_RECORD_BYTES = 16 * 1024 * 1024
 
 
-def counter(usage, key):
-    value = usage.get(key)
-    return value if type(value) is int and value >= 0 else None
-
-
-def normalize(host, usage):
-    usage = usage if isinstance(usage, dict) else {}
-    total = counter(usage, 'input_tokens')
-    read = counter(usage, 'cached_input_tokens')
-    written = counter(usage, 'cache_write_input_tokens')
-    if host == 'claude':
-        read = counter(usage, 'cache_read_input_tokens')
-        written = counter(usage, 'cache_creation_input_tokens')
-        parts = (total, read, written)
-        total = sum(parts) if None not in parts else None
-    elif total is not None and read is not None and read > total:
-        read = None
-    return dict(zip(FIELDS, (total, read, counter(usage, 'output_tokens'), written)))
-
-
-def summarize_usage(path, host):
+def _events(path, issues):
     if not path.is_file():
         raise ValueError('usage input must be a regular JSONL file')
-    records = {}
-    issues = set()
-    open_turns = 0
-    threads = 0
-    with path.open('rb') as stream:
-        for number, raw in enumerate(iter(lambda: stream.readline(MAX_RECORD_BYTES + 1), b''), 1):
-            if len(raw) > MAX_RECORD_BYTES:
-                raise ValueError(f'usage JSONL line {number} exceeds the size limit')
-            if not raw.strip():
+    with path.open('rb') as log:
+        for line_number, line in enumerate(iter(lambda: log.readline(MAX_RECORD_BYTES + 1), b''), start=1):
+            if len(line) > MAX_RECORD_BYTES:
+                raise ValueError(f'usage JSONL line {line_number} exceeds the size limit')
+            if not line.strip():
                 continue
             try:
-                event = json.loads(raw)
-            except (ValueError, UnicodeError):
+                event = json.loads(line.decode('utf-8'))
+            except (ValueError, RecursionError):
+                event = None
+            if isinstance(event, dict):
+                yield event
+            else:
                 issues.add('Malformed JSONL makes overall totals unknown.')
-                continue
-            if not isinstance(event, dict):
-                issues.add('Malformed JSONL makes overall totals unknown.')
-                continue
-            kind = event.get('type')
-            if host == 'claude' and kind == 'assistant':
-                message = event.get('message')
-                key = message.get('id') if isinstance(message, dict) else None
-                if not isinstance(key, str) or not key:
-                    issues.add('Claude assistant records without a message ID cannot be deduplicated.')
-                    continue
-                usage = message.get('usage')
-                if isinstance(usage, dict) or key not in records:
-                    records[key] = normalize(host, usage)
-            elif host == 'codex':
-                if kind == 'thread.started':
-                    threads += 1
-                elif kind == 'turn.started':
-                    open_turns += 1
-                elif kind in ('turn.completed', 'turn.failed'):
-                    open_turns = max(0, open_turns - 1)
-                    if kind == 'turn.failed':
-                        issues.add('A failed Codex turn may include unreported usage.')
-                    else:
-                        records[number] = normalize(host, event.get('usage'))
-    if host == 'codex' and open_turns:
+
+
+def _claude_reports(events, issues):
+    by_message = {}
+    for event in events:
+        if event.get('type') != 'assistant':
+            continue
+        message = event.get('message')
+        message_id = message.get('id') if isinstance(message, dict) else None
+        if not isinstance(message_id, str) or not message_id:
+            issues.add('Claude assistant records without a message ID cannot be deduplicated.')
+            continue
+        usage = message.get('usage')
+        if isinstance(usage, dict):
+            by_message[message_id] = usage
+        else:
+            by_message.setdefault(message_id, {})
+    return by_message.values()
+
+
+def _codex_reports(events, issues):
+    pending = 0
+    threads = 0
+    for event in events:
+        kind = event.get('type')
+        if kind == 'thread.started':
+            threads += 1
+        elif kind == 'turn.started':
+            pending += 1
+        elif kind in ('turn.completed', 'turn.failed'):
+            pending = max(0, pending - 1)
+            if kind == 'turn.completed':
+                usage = event.get('usage')
+                yield usage if isinstance(usage, dict) else {}
+            else:
+                issues.add('A failed Codex turn may include unreported usage.')
+    if pending:
         issues.add('A started Codex turn has no terminal record.')
     if threads > 1:
         issues.add('Expected a single Codex thread rather than concatenated logs.')
-    totals = {}
-    for field in FIELDS:
-        values = [record[field] for record in records.values()]
-        totals[field] = sum(values) if values and None not in values and not issues else None
+
+
+def _count(report, key):
+    value = report.get(key)
+    return value if type(value) is int and value >= 0 else None
+
+
+def _counts(report, host):
+    counts = {key: _count(report, key) for key in COUNTERS}
+    if host == 'claude':
+        counts[CACHED] = _count(report, 'cache_read_input_tokens')
+        counts[WRITTEN] = _count(report, 'cache_creation_input_tokens')
+        parts = (counts[INPUT], counts[CACHED], counts[WRITTEN])
+        counts[INPUT] = sum(parts) if None not in parts else None
+    elif counts[INPUT] is not None and counts[CACHED] is not None and counts[CACHED] > counts[INPUT]:
+        counts[CACHED] = None
+    return counts
+
+
+def summarize_usage(path, host):
+    issues = set()
+    events = _events(path, issues)
+    collect = _claude_reports if host == 'claude' else _codex_reports
+    totals = dict.fromkeys(COUNTERS, 0)
+    unavailable = set()
+    records = 0
+    for report in collect(events, issues):
+        records += 1
+        for key, value in _counts(report, host).items():
+            if value is None:
+                unavailable.add(key)
+            else:
+                totals[key] += value
+    if issues or not records:
+        unavailable.update(COUNTERS)
     notes = sorted(issues)
     if not records:
         notes.append('No supported usage records found.')
-    missing = [field for field, total in totals.items() if total is None]
-    if missing:
+    if unavailable:
+        missing = [key for key in COUNTERS if key in unavailable]
         notes.append('Unavailable totals: ' + ', '.join(missing) + '.')
+        for key in missing:
+            totals[key] = None
     notes.append('Counts cover only the supplied log and may omit separate subagent or failed calls.')
-    return {'host': host, 'usage': {field: totals[field] for field in FIELDS[:3]},
-            'cache_write_input_tokens': totals[FIELDS[3]], 'usage_records': len(records),
-            'usage_notes': ' '.join(notes)}
+    return {
+        'host': host,
+        'usage': {key: totals[key] for key in (INPUT, CACHED, OUTPUT)},
+        WRITTEN: totals[WRITTEN],
+        'usage_records': records,
+        'usage_notes': ' '.join(notes),
+    }

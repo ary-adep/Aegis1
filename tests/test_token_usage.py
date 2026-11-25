@@ -78,3 +78,27 @@ class TokenUsageTests(unittest.TestCase):
         result = self.summarize('claude', {'type': 'assistant', 'message': {
             'usage': {'input_tokens': 3, 'output_tokens': 1}}})
         self.assertIn('cannot be deduplicated', result['usage_notes'])
+
+    def test_concatenated_codex_threads_do_not_report_totals(self):
+        result = self.summarize(
+            'codex', {'type': 'thread.started'},
+            {'type': 'turn.completed', 'usage': {
+                'input_tokens': 8, 'cached_input_tokens': 0, 'output_tokens': 1}},
+            {'type': 'thread.started'},
+        )
+        self.assertEqual(result['usage_records'], 1)
+        self.assertTrue(all(counter is None for counter in result['usage'].values()))
+        self.assertIn('single Codex thread', result['usage_notes'])
+
+    def test_oversized_line_is_rejected_without_printing_contents(self):
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / 'run.jsonl'
+            log.write_bytes(b'private fixture text' + b' ' * (16 * 1024 * 1024))
+            completed = subprocess.run(
+                [sys.executable, '-B', str(ROOT / 'scripts/evaluate.py'),
+                 'usage', '--host', 'claude', str(log)],
+                capture_output=True, text=True, timeout=10,
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn('line 1 exceeds the size limit', completed.stderr)
+            self.assertNotIn('private fixture text', completed.stdout + completed.stderr)

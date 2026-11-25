@@ -81,6 +81,13 @@ usage where observable. Mark unexecuted comparisons explicitly.
 
 ## Upstream synchronization and development freeze
 
+For new Aegis1 work, use ECC as a behavioral benchmark. Write the Aegis1
+requirement and acceptance checks first, then implement against those checks
+using Aegis1's existing interfaces. Keep upstream implementations, skill
+wording, hooks, and assets out of new Aegis1 components. Record the upstream
+reference and the Aegis1 files that implement the behavior. Keep existing
+attribution while the provenance of earlier adaptations is reviewed.
+
 Update from the audited commit, not a moving tag. Review a new revision in a
 separate checkout, diff relevant upstream paths and lockfiles, regenerate the
 inventory, and record source paths, commit IDs, content hashes, license and
@@ -106,6 +113,10 @@ transcript discovery, pricing, or metrics writes.
 Local regression tests use synthetic host records. A standalone ECC
 comparison requires approved equivalent log inputs and an isolated runtime.
 Live host usage parity and token savings remain unmeasured.
+
+The later [requirements-based rewrite](../token-usage-requirements.md)
+preserves the CLI contract. See the [provenance review](provenance-review.md)
+for the scope and limits of that work.
 
 ## Batch 2: install planning and host inventory
 

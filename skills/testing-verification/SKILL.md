@@ -63,6 +63,26 @@ Use [environment-effects.md](references/environment-effects.md) before environme
 
 Use [acceptance-verification.md](references/acceptance-verification.md) for requirement-level verification.
 
+## Review evidence for the current change
+
+When a task supplies prior results, start with the acceptance criterion and
+identify the exact change, inputs, and check it requires. Compare those with
+the revision, workspace fingerprint, command, and input identities recorded
+in the evidence, where available.
+
+- A result for a fixture, control, or older snapshot can inform the diagnosis.
+  It cannot satisfy the criterion for a different candidate.
+- An output-only log establishes the outputs it contains. If the check depends
+  on which SQL, payload, or migration ran, require evidence identifying that
+  input before treating the result as verified.
+- For an approved SDD handoff, apply the linked
+  [spec-driven workflow](../aegis/references/spec-driven-development.md).
+  Record the gate outcome and assess whether the underlying evidence supports
+  the criterion. A matching fingerprint establishes record integrity.
+- If a required check remains open, give the smallest authorized rerun with
+  its expected result. Use the existing blocked status if execution or
+  required evidence is unavailable.
+
 ## Distributed-system verification
 
 When relevant, verify:
