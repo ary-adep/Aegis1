@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aegis1 — Capability dashboard</title>
+<style>
+  :root { color-scheme: dark; --base:#101915; --panel:#16231d; --line:#33463b; --ink:#f1f5ef; --muted:#b4c6ba; --accent:#c5f994; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--base); color:var(--ink); font:1rem/1.55 system-ui,sans-serif; }
+  .wrap { width:min(1200px,92%); margin:auto; }
+  a { color:var(--accent); text-underline-offset:.2em; }
+  a:hover { color:white; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:4px; }
+  header { border-bottom:1px solid var(--line); }
+  nav { display:flex; flex-wrap:wrap; gap:10px 24px; padding:16px 0; align-items:center; }
+  nav a { color:var(--muted); font-size:.9rem; }
+  nav strong { margin-right:auto; color:var(--accent); letter-spacing:.06em; }
+  .hero { padding:58px 0 32px; max-width:850px; }
+  .eyebrow { color:var(--accent); letter-spacing:.12em; text-transform:uppercase; font-size:.75rem; font-weight:750; }
+  h1,h2,h3,p { margin-top:0; }
+  h1 { font-size:clamp(2.6rem,8vw,5.4rem); line-height:1; margin-bottom:20px; letter-spacing:-.07em; }
+  h2 { font-size:clamp(1.65rem,4vw,2.55rem); line-height:1.1; letter-spacing:-.04em; margin-bottom:14px; }
+  h3 { margin-bottom:8px; line-height:1.25; }
+  section { margin:40px 0; scroll-margin-top:20px; }
+  .lead { font-size:1.2rem; color:var(--muted); }
+  .meta { color:var(--muted); font-size:.9rem; }
+  .grid,.flow,.cards { display:grid; gap:12px; }
+  .grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .flow { grid-template-columns:repeat(4,minmax(0,1fr)); list-style:none; padding:0; }
+  .tile,.flow li,.card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .tile p,.flow p,.card p { color:var(--muted); margin-bottom:0; }
+  .tile strong,.flow strong { display:block; color:var(--accent); margin-bottom:6px; }
+  .filters { display:flex; flex-wrap:wrap; gap:12px; margin:22px 0 12px; align-items:end; }
+  label { display:grid; gap:5px; font-size:.86rem; color:var(--muted); }
+  label:first-child { flex:1 1 230px; }
+  input,select,button { font:inherit; color:var(--ink); background:var(--panel); border:1px solid #62766a; border-radius:7px; padding:8px 10px; min-height:42px; }
+  input,select { max-width:100%; }
+  button { cursor:pointer; }
+  .cards { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .card-top { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px; }
+  .badge { display:inline-block; font-size:.72rem; font-weight:750; letter-spacing:.04em; padding:3px 8px; border:1px solid currentColor; border-radius:5px; }
+  .tested { color:#c5f994; }.implemented { color:#a9dafa; }.partial { color:#ffd790; }.planned { color:#e0c9ff; }.unknown { color:#f5b4bb; }
+  .card dl { margin:0; }
+  .card dt { margin-top:10px; font-size:.79rem; font-weight:750; text-transform:uppercase; letter-spacing:.04em; }
+  .card dd { margin:2px 0 0; color:var(--muted); }
+  .card p { margin-top:12px; font-size:.88rem; }
+  details { border-block-start:1px solid var(--line); padding:12px 0; }
+  summary { cursor:pointer; font-weight:700; }
+  details p { margin:.6em 0 0; }
+  .roadmap { padding-left:24px; }
+  .roadmap li { margin-bottom:12px; }
+  footer { border-top:1px solid var(--line); padding:20px 0; color:var(--muted); }
+  code { overflow-wrap:anywhere; }
+  @media(max-width:780px) { .grid,.flow { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  @media(max-width:570px) { .grid,.flow,.cards { grid-template-columns:1fr; } .hero { padding-top:34px; } label { flex:1 1 150px; } }
+  @media print { :root { color-scheme:light; --base:white; --panel:white; --ink:black; --muted:#222; --accent:#123c16; --line:#777; } .filters,nav { display:none; } .badge { color:black; } .card { break-inside:avoid; } }
+</style>
+</head>
+<body>
+<header><nav class="wrap" aria-label="Dashboard sections"><strong>AEGIS1</strong><a href="#architecture">Architecture</a><a href="#inventory">Capability inventory</a><a href="#evidence">Evidence</a><a href="#roadmap">Roadmap</a></nav></header>
+<main class="wrap">
+  <div class="hero">
+    <p class="eyebrow">Current state and target architecture</p>
+    <h1>Aegis1 capability dashboard</h1>
+    <p class="lead">A supervised engineering pilot with a tested handoff gate. The target is a model-flexible system that can own bounded engineering work with human approval and independently verified evidence.</p>
+    <p class="meta">Reviewed <time datetime="2026-11-26">26 November 2026</time> · Baseline <a href="https://github.com/ary-adep/Aegis1/commit/2cbb112b5d182a248a38be8e6113313089774f4c"><code>2cbb112</code></a> on <code>aegis1-standalone-pilot</code> · Includes local runbook guidance and later pilot observations.</p>
+  </div>
+  <div class="grid" aria-label="Pilot summary">
+    <div class="tile"><strong>5 / 10 · Enterprise target</strong><p>Most recent qualitative assessment. Comparative benefit, full host parity, and enterprise assurance remain open.</p></div>
+    <div class="tile"><strong>73 · Automated tests passed</strong><p>Latest local run, including handoff status. The pushed archive passed 72. Automated tests cover tooling and fixtures.</p></div>
+    <div class="tile"><strong>35 · Evaluation scenarios</strong><p>Defined prompts, expected behavior, and boundaries. The full model matrix is still open.</p></div>
+  </div>
+
+  <section id="architecture">
+    <h2>How the system works</h2>
+    <p class="meta">Capabilities below distinguish implemented mechanisms, tested behavior, and the target for each area.</p>
+    <h3>Current supervised workflow</h3>
+    <ol class="flow">
+      <li><strong>Enter and route</strong><p>Claude Code <code>/aegis</code>, standalone read-only discovery, or the local discovery UI.</p></li>
+      <li><strong>Investigate and implement</strong><p>Specialists read source and relevant references. Claude Code can implement within human-approved scope.</p></li>
+      <li><strong>Review evidence</strong><p>Inline checks, a read-only verifier where allowed, or a separate reviewer using SDD records.</p></li>
+      <li><strong>Gate handoff</strong><p>SDD checks approval, file scope, working state, evidence, and freshness. Humans control release.</p></li>
+    </ol>
+    <h3>Target governed workflow</h3>
+    <ol class="flow">
+      <li><strong>Approve the spec</strong><p>Set behavior, risk, edit boundaries, acceptance checks, and decisions that require a human.</p></li>
+      <li><strong>Assemble relevant context</strong><p>Use current code intelligence, approved memory, and proportional model routing to bound the work.</p></li>
+      <li><strong>Implement across hosts</strong><p>Reuse existing components, run approved checks, and preserve a portable evidence trail.</p></li>
+      <li><strong>Verify and learn</strong><p>Independently test requirements, enforce the gate, measure outcomes, and promote lessons under review.</p></li>
+    </ol>
+  </section>
+
+  <section id="inventory">
+    <h2>Capability inventory</h2>
+    <p class="meta"><strong>Tested</strong> has a named observation. <strong>Implemented</strong> has a source entry point. <strong>Partial</strong> covers a limited scope. <strong>Planned</strong> is target work. <strong>Unknown</strong> needs evidence.</p>
+    <div class="filters">
+      <label>Find a capability<input type="search" id="search" placeholder="Search features, evidence, or targets"></label>
+      <label>Area<select id="area"><option value="">All areas</option></select></label>
+      <label>Status<select id="status"><option value="">All statuses</option><option>Tested</option><option>Implemented</option><option>Partial</option><option>Planned</option><option>Unknown</option></select></label>
+      <button type="button" id="clear">Reset</button>
+    </div>
+    <p id="count" class="meta" role="status"></p>
+    <div id="cards" class="cards"></div>
+    <noscript><p>Enable JavaScript for the searchable inventory. The architecture, evidence, and roadmap sections are available without it.</p></noscript>
+  </section>
+
+  <section id="evidence">
+    <h2>What the evidence supports</h2>
+    <details open><summary>Governed handoff</summary><p>The disposable lab README pilot passed scope checks and independent review after two corrections. SDD accepted the reviewed snapshot, blocked a temporary unreviewed edit, and passed after restoration. The review inspected source. No Kafka service was run. <a href="sdd.md">SDD record format and workflow</a></p></details>
+    <details><summary>ECC comparisons</summary><p>Dispatch architecture review tied on content. Both workflows passed the stale-evidence and positive gate cases with access to the same checker. The one-line and multi-file implementation tasks tied, with independent tests and preserved user edits. These cases do not establish full ECC parity. <a href="ecc/README.md">ECC integration record</a></p></details>
+    <details><summary>Native Claude comparison</summary><p>In the first matched runbook task, native Claude needed two clear correction areas and Aegis1 needed four. The Aegis1 retest addressed the four targeted findings but introduced two substantive overstatements and a layout issue.</p><p>The Redis fallback comparison tied at four correction areas per draft. Both preserved scope and described the principal cache paths. Native gave the more accurate warning explanation but overclaimed latency, HTTP failure causes, readiness, and dead-letter behavior. Aegis1 overclaimed what the warning established, described the cached JSON as the direct response, overclaimed readiness, and misstated the topic name.</p><p>In the approved smoke-runner pilot, each implementation passed 11 offline tests on independent rerun and one acceptance criterion at the shared SDD gate. Both preserved the Git baseline and reported no extra human input. Aegis1 used the scope checker before and after editing. Native checked baseline metadata directly. Exact models, token use, and permission prompts are unconfirmed.</p></details>
+    <details><summary>Release and registration</summary><p>The extracted provenance pilot passed 72 tests, structural validation, clean and repeat installation, and a synthetic token accounting command. A fresh disposable install of commit <code>2cbb112</code> loaded <code>/aegis</code> and read port 8088 from a fixture. The session read only part of governance and the discovery skill. <a href="ecc/provenance-review.md">Provenance review</a></p></details>
+    <details><summary>Cross-host memory and context</summary><p>A finding saved in Claude Code was imported in Codex, and a source edit made it stale. Both VS Code hosts returned the same approved lesson and omitted the stale lesson when invoking the preview helper. Neither test measured token savings. <a href="ecc/README.md#batch-5-increment-1-portable-project-memory">Memory integration evidence</a></p></details>
+  </section>
+
+  <section id="roadmap">
+    <h2>Roadmap and exit criteria</h2>
+    <ol class="roadmap">
+      <li><strong>M1 · Verified baseline and ECC stabilization.</strong> The Redis runbook comparison is scored. Record model, permissions, and token counters where available. Validate release lifecycle and remaining host boundaries.</li>
+      <li><strong>M2 · Context efficiency.</strong> Demonstrate fewer tokens or less reviewer effort on matched work while preserving correctness, evidence quality, and escalation.</li>
+      <li><strong>M3 · SDD governance.</strong> Extend tested spec-to-handoff coverage across representative implementation tasks and both hosts. Protect approver and verifier records.</li>
+      <li><strong>M4 · Code intelligence.</strong> Maintain a fresh dependency graph and validate cross-service impact and drift findings against real source changes.</li>
+      <li><strong>M5 · Model-flexible execution.</strong> Verify comparable approved workflows and handoff evidence across hosts and models.</li>
+      <li><strong>M6 · Enterprise assurance.</strong> Validate enforceable controls, upgrade and rollback, auditability, and organizational approval for real usage.</li>
+    </ol>
+    <p class="meta">New SDD extensions, persistent Graphify, advanced impact and drift analysis, decision intelligence, and broader autonomy were deferred during ECC stabilization. The milestones describe the target.</p>
+  </section>
+
+  <section id="updates">
+    <h2>Progress log</h2>
+    <details open><summary>Pilot update</summary><p>This snapshot adds runbook guidance, the read-only SDD status command, and this dashboard. Redis and smoke-runner comparisons tied. Both smoke-runner changes passed the shared handoff gate in disposable workspaces.</p></details>
+    <details><summary>Pushed baseline · <code>2cbb112</code></summary><p>Requirements-based token accounting rewrite, evidence freshness guidance, and provenance review. All 72 archive tests passed.</p></details>
+    <details><summary>Pilot integration · <code>3ad281f</code></summary><p>Shipped ECC-informed pilot features, proportional review routing, and SDD helpers. Pilot push was verified against the remote branch.</p></details>
+    <p class="meta">Maintenance: update the capability’s current state, status, and evidence when results change. Add the commit or observed run to this log. Update the baseline when a new snapshot is pushed. The dashboard is a local, maintained record.</p>
+  </section>
+</main>
+<footer><div class="wrap"><a href="../README.md">Repository guide</a> · <a href="../evaluations/README.md">Evaluation procedure</a> · <a href="ecc/README.md">Integration notes</a></div></footer>
+<script id="capabilities-data" type="text/plain">
+Skills and routing | /aegis project entry point | Tested | Explicit Claude Code invocation loads the project skill. | Commit 2cbb112 reported the correct skill path and port 8088 in a fresh project. Full instruction loading was outside this check. | Verify normal entry points across supported configurations. | ../skills/aegis/SKILL.md
+Skills and routing | System discovery | Tested | Maps repository facts, entry points, and request-to-storage flow with citations. | Lab order-to-payment trace was source-only. | Reuse current cross-repository evidence during onboarding. | ../skills/system-discovery/SKILL.md
+Skills and routing | Requirements analysis | Implemented | Extracts behavior, acceptance criteria, and unresolved business choices. | Specialist and fixtures exist. Target model matrix is open. | Trace approved requirements through delivery. | ../skills/requirements-analysis/SKILL.md
+Skills and routing | Architecture analysis | Tested | Assesses boundaries, constraints, and trade-offs from source. | Narrow reservation and consequential Dispatch routing cases completed. | Consistently identify material dependency and design risks. | ../skills/architecture-analysis/SKILL.md
+Skills and routing | Implementation planning | Implemented | Maps approved changes and verification to repository paths. | Specialist is present in the installer. | Produce reviewable plans with affected tests and alternatives. | ../skills/implementation-planning/SKILL.md
+Skills and routing | Implementation | Tested | Applies bounded changes and runs authorized checks. | Both bounded benchmark fixes passed independent tests and preserved scope. | Own larger approved changes through verified handoff. | ../skills/implementation/SKILL.md
+Skills and routing | Documentation reconciliation | Partial | Documentation guidance checks source claims, scope, links, and operational advice. | Updated local guidance addressed four targeted findings; the retest still had substantive errors and one layout issue. | Reduce first-draft corrections on distinct tasks. | ../skills/implementation/references/documentation.md
+Skills and routing | Testing and verification | Tested | Maps checks to criteria and distinguishes failures, blocked checks, and skipped evidence. | Governed README pilot completed independent review. Prior output-only transcripts exposed input provenance gaps. | Capture decisive checks for the exact candidate consistently. | ../skills/testing-verification/SKILL.md
+Skills and routing | Code review | Implemented | Reports supported findings from a supplied diff. | Installed specialist. Native command names can overlap, so use the orchestrator path for identity checks. | Measure findings and regression detection across hosts. | ../skills/code-review/SKILL.md
+Skills and routing | Debugging | Implemented | Investigates cause using evidence and reports unresolved gaps. | Specialist and failure fixtures exist. | Validate root-cause accuracy and smallest safe fixes. | ../skills/debugging/SKILL.md
+Skills and routing | Proportional review | Tested | Keeps a narrow review inline and loads deeper references when material. | Two direct-read tests exercised narrow and consequential routes. Configured focused path is 1,095 bytes smaller in the stated case. | Measure live savings with comparable logs. | ecc/README.md#proportional-read-only-review
+Skills and routing | Schema and event impact | Tested | Traces migration constraints, mixed-version read/write behavior, retained replay, rollback, and decisive checks. | Dispatch review found both blockers. One rollback detail needed correction. | Generalize across real service boundaries and contract variants. | ../skills/architecture-analysis/references/change-impact.md
+Skills and routing | Read-only scout | Implemented | Searches bounded source using Read, Glob, and Grep. Main session checks material claims. | Agent definition ships with the project installer. | Validate actual delegation, denied cases, and fallback on target hosts. | ../agents/aegis1-scout.md
+Skills and routing | Independent verifier role | Implemented | Read-only agent can check evidence and findings. Main session owns authorized runtime checks. | Verifier definition ships; the governed lab review used a separate reviewer. | Demonstrate role invocations and independent evidence across hosts. | ../agents/aegis1-verifier.md
+Skills and routing | Delegated model selection | Implemented | Uses approved available Claude host choices and falls back to the session model. | Helper and route tests exist. | Validate reuse of observed cost and capability data within host policy. | ../skills/aegis/references/delegated-model-selection.md
+Skills and routing | Adaptive Engineering Intelligence | Partial | Task risk and scope inform specialist, references, and verification effort. | The proportional routing cases tested a narrow and a consequential question. | Adapt depth and models from measured outcomes while preserving controls. | ../skills/aegis/SKILL.md
+Skills and routing | Parallel investigation | Partial | Claude Code instructions allow bounded scouts when the host permits them and independent areas warrant a split. | Available implementation is host-directed delegation. | Verify coordination, evidence reconciliation, and resource limits. | ../skills/aegis/SKILL.md
+Governance and SDD | Shared engineering policy | Implemented | Preserves user work, consequential approval, and human Git and release authority. | Governed lab edit and implementation fixtures stayed in approved files. | Enforce critical constraints through host controls as well as instructions. | ../agents/aegis1.md
+Governance and SDD | Spec validation | Tested | Checks that requirements and criteria are valid and traceable. | Suite covers malformed and untraced requirements. | Validate representative specs across teams. | ../tests/test_sdd.py
+Governance and SDD | Review-ready verification plans | Tested | Criteria can name setup, action, expected outcome, source paths, project checks, and coverage gaps. | Validator tests and README pilot approval exercised the structured form. | Reuse relevant checks consistently during real changes. | sdd.md#review-ready-criteria-from-impact-analysis
+Governance and SDD | Human approval record | Tested | Binds a named approval to a spec and baseline workspace. Overlapping edits require explicit scope consent. | Local tests and the README pilot exercised approval and overlap handling. | Protect records with company-approved access control. | sdd.md
+Governance and SDD | Scope fingerprint | Tested | Tracks approved paths, Git HEAD, index, and relevant working state. | Scope passed for README only and flagged out-of-scope changes in tests. | Verify approved scope throughout multi-repo work. | ../skills/aegis/sdd.py
+Governance and SDD | Independent review and verification records | Tested | Binds reviewer, criterion results, artifact digests, and workspace fingerprint. | Separate Codex review accepted the corrected Claude draft. | Authenticate actor identity and protect evidence storage. | sdd.md#3-verify-and-check-before-handoff
+Governance and SDD | Handoff gate and stale evidence | Tested | Blocks a snapshot or evidence change after review. | Positive and stale controls behaved correctly. The lab pilot passed, blocked a temporary edit, and passed after restoration. | Cover larger changes and audit evidence across hosts. | ../tests/test_sdd.py
+Governance and SDD | Read-only handoff status | Tested | Reports ready or the first blocked stage with its reason and next action. | Tests cover current records, missing records, stale evidence, and scope drift. On the reviewed lab pilot, pointing to a missing verification file identified the verification stage and suggested the reviewer action. The real record still passed. | Measure whether reviewers reach a correct decision with fewer steps. | sdd.md#3-verify-and-check-before-handoff
+Governance and SDD | Standalone development checkpoint | Implemented | Saves scoped diff, base revision, fingerprints, supplied results, and pending work outside the repo. | Save, check, and review commands exist with stale checks before and after host review. | Transfer bounded work and its evidence across hosts. | ../README.md#development-handoff-between-hosts
+Governance and SDD | Engineering decision intelligence | Planned | Human decisions are surfaced in reports and specs. A dedicated decision capability is deferred. | No dedicated implementation verified. | Trace decisions, alternatives, owners, and later impact. | ecc/README.md#upstream-synchronization-and-development-freeze
+Memory and efficiency | Save, recall, and forget findings | Tested | Explicit project-scoped SQLite records support multiple cited sources and deletion by ID. | Memory tests cover scoped reads and deletion. | Maintain verified reusable context across sessions. | ../skills/aegis/references/project-memory.md
+Memory and efficiency | Stale source detection | Tested | Recall fingerprints sources and marks changed or missing evidence stale. | Cross-host demo detected port change from 8088 to 9099. | Explain freshness consistently for all reused evidence. | ../tests/test_memory.py
+Memory and efficiency | Portable memory bundles | Tested | Exports selected findings to a new file; validates imports before writing and recognizes repeated imports. | One Claude Code to Codex handoff and synthetic import tests passed. | Verify controlled transfer on additional approved projects. | ecc/README.md#batch-5-increment-1-portable-project-memory
+Memory and efficiency | Reviewed lesson lifecycle | Tested | Propose from current evidence, approve or reject once, list for audit, and recall only approved current lessons. Deleting a finding removes dependent lessons. | Regression tests cover stale, repeat, and cross-project decisions. | Protect review identity and measure reuse benefit. | ecc/README.md#batch-5-increment-2-reviewed-learning
+Memory and efficiency | Read-only context preview | Tested | Ranks approved current lessons by shared task terms, explains matches, and enforces a byte and item cap. | Both VS Code hosts returned the same current lesson and omitted the stale lesson. | Measure relevance, reviewer effort, and token impact. | ecc/README.md#batch-5-increment-3-task-context-preview
+Memory and efficiency | Token accounting | Tested | Summarizes an explicitly supplied Claude or Codex log with cache accounting and unknown-counter handling. | Requirements rewrite, synthetic fixtures, and extracted-package smoke test passed. | Capture comparable live logs and cost evidence. | token-usage-requirements.md
+Memory and efficiency | Live token savings | Unknown | Comparable live counters have not been captured for a matched run. | Reply word counts are available for some cases. | Demonstrate equal or better outcomes at lower token use. | ../evaluations/README.md#capture-token-counters-from-a-host-log
+Memory and efficiency | Automatic learning and injection | Planned | Current memory, promotion, and preview require explicit action. | No autonomous learner is shipped in the pilot. | Evaluate controlled learning with consent, freshness, and opt-in context use. | ecc/README.md
+Hosts and interfaces | Standalone CLI | Implemented | Packaged Python CLI reads tracked files in one Git checkout and produces cited discovery reports. | Simulated adapter exercises the loop and returns blocked by design. | Extend verified discovery coverage without relaxing file constraints. | ../README.md#standalone-discovery-pilot
+Hosts and interfaces | Standalone Claude and OpenAI adapters | Partial | Supports explicit provider models and auto selection from configured approved inventory. | Source and local route tests exist. Live model matrix remains open. | Demonstrate comparable approved model behavior and capture actual model IDs. | ../scripts/aegis1.py
+Hosts and interfaces | Pause and resume | Implemented | Local checkpoint tracks revision and fingerprinted excerpts. Resume rereads inputs and can use a different approved model. | CLI workflow and state handling exist. | Verify recovery and stale context across more model and repository changes. | ../README.md#pause-and-resume-discovery
+Hosts and interfaces | Claude Code host execution | Tested | Project installation, inline orchestration, skills, and signed-in host discovery supported. | Commit 2cbb112 slash command ran in a disposable VS Code project. | Validate full invocation and delegation across supported hosts. | ../README.md#install-into-a-claude-code-project
+Hosts and interfaces | Codex host execution | Partial | Local UI can use a read-only Codex host. Shared memory and SDD helpers can run explicitly. | Memory and context preview exercised in VS Code. Installer exposes inventory only. | Verify first-class Codex setup and full governed workflow. | ../scripts/aegis1_hosts.py
+Hosts and interfaces | Local discovery UI | Implemented | Loopback read-only chat offers host selection, streamed responses and activity, citations, and workspace binding. | UI and host adapters exist. Certification across host versions is open. | Verify normal discovery paths across macOS, Windows, and Linux. | ../scripts/aegis1_ui.html
+Hosts and interfaces | Workspace picker and suggestions | Implemented | Native picker on supported environments with browser fallback and a configured root. | macOS, Windows, and optional Linux picker paths exist. | Test fallback, cancellation, and workspace boundary on each platform. | ../scripts/aegis1_ui.py
+Hosts and interfaces | Chat history and copy | Implemented | Browser history search, resume, delete, copy as Markdown, and bounded prior messages. | UI source stores history under the local URL and workspace root. | Validate local retention, portability needs, and cross-host continuation. | ../scripts/aegis1_ui.html
+Hosts and interfaces | Multi-repository discovery | Partial | Claude Code can read a common parent and optional workspace map; CLI discovery uses one repository. | Local evidence supports bounded multi-repo discovery design. | Track each checkout, cross-service edges, and current evidence in both hosts. | ../README.md#multi-repository-discovery-in-claude-code
+Code intelligence | Graphify export support | Implemented | Reads a supplied local graph to prioritize tracked paths and verifies claims in source. | CLI option exists, and the simulated adapter keeps its fixed read sequence. | Verify prioritization gains and detect stale graphs. | ../README.md#graphify-assisted-discovery
+Code intelligence | Persistent code graph | Planned | External graph snapshots are available as inputs. Persistent indexing is deferred. | No persistent indexing verified. | Maintain revision-aware code and interface relationships. | ecc/README.md
+Code intelligence | Advanced impact and drift | Planned | Targeted schema and event analysis works from local source. Continuous architecture and docs drift detection is deferred. | The Dispatch case exercised targeted impact review. | Identify cross-service breakage and source-documentation drift with evidence. | ../skills/architecture-analysis/references/change-impact.md
+Code intelligence | Reuse-first engineering | Partial | Guidance asks agents to inspect conventions and reuse suitable logic. | Both batch reservation implementations reused the existing function. | Measure reuse and simplicity across larger brownfield changes. | ../agents/aegis1.md
+Code intelligence | Repository evidence and limits | Implemented | Standalone reads are bounded to tracked source with cited excerpts. | The CLI checks read paths and validates citations against inspected evidence. | Make evidence validity consistent across entry points. | ../scripts/aegis1.py
+Evaluation | Structural validation | Tested | Checks skill and agent metadata and layout locally. | Candidate archive and local regression passed validation. | Retain fast checks across every release snapshot. | ../scripts/validate.py
+Evaluation | Scenario preparation | Tested | Lists and prepares isolated fixtures and separates task, baseline, evaluator rubric, and result template. | 35 cases enumerated and selected live comparisons prepared. | Establish repeatable representative tasks for each host and model. | ../evaluations/cases.json
+Evaluation | Scored records and receipts | Tested | Validates record shape and binds scoring artifacts with reviewer-held SHA-256 receipts. | Tests cover stale or missing evidence and scoped writes. | Verify protected storage and external audit usability. | ../evaluations/README.md#score-observed-behavior
+Evaluation | ECC comparisons | Partial | Selected architecture, handoff, and implementation cases completed. | Comparisons tied on the tested core outcomes. Full upstream parity is unverified. | Account for applicable capabilities and document exclusions and parity evidence. | ecc/README.md
+Evaluation | Native Claude comparison | Partial | Paired tasks compare source accuracy, scope preservation, review corrections, and handoff effort. | Native led the initial runbook case. Redis fallback and the approved smoke-runner implementation tied. | Show repeatable improvement in correctness or reviewer effort. | #evidence
+Evaluation | Model matrix and release evidence | Partial | Model matrix, local fixtures, and release checks are documented. | 72 automated tests passed; broader live matrix has not been completed. | Record actual model, permissions, usage, and outcomes for each representative run. | ../evaluations/model-matrix.json
+Security and release | Project and personal installation | Tested | Python installer copies skills, references, helper scripts, and agents. Shell wrapper supports personal installation. | Clean project install wrote 45 files and repeat install wrote none. Personal host rollout is outside this check. | Retest supported platform and scope combinations. | ../install-aegis.py
+Security and release | Install preview and conflict detection | Tested | Read-only plan identifies additions, managed updates, conflicts, and legacy link relocation. | Disposable fixture checks cover unchanged existing files, conflicts, and legacy paths. | Verify representative managed-host upgrades. | ../tests/test_install_plan.py
+Security and release | Versioned upgrade and restoration | Partial | Fingerprints guard replacement and installer backs up managed files. | Same-version 0.2.6 snapshot upgrade and manual byte-for-byte restoration passed. Older-version upgrade remains open. | Demonstrate supported cross-version upgrade and tested recovery. | ecc/README.md#pilot-release-checklist
+Security and release | Static configuration inspection | Tested | Reads explicitly selected configuration files, checks recognized declarations, and reports bounded findings. | Synthetic parser and file-scope tests passed. | Validate against approved host configurations and effective permissions. | ../scripts/config_check.py
+Security and release | Work-guard profile | Implemented | Opt-in delegation uses the named read-only roles from an existing guard where available. | Profile and fallback are described. The guard owns enforcement. | Verify real allow, deny, unavailable, and rollback paths in target setups. | ../README.md#compatibility-with-the-work-guard
+Security and release | Hooks and AgentShield runtime | Planned | Static inspection ships. Runtime integration and hook activation require separate review. | Source audit recorded dependencies and exclusions. Runtime enforcement is unverified. | Enforce approved boundaries and prove hook compatibility and recovery. | ecc/README.md#batch-4-agentshield-and-host-configuration-audit
+Security and release | ECC provenance | Tested | Pinned source audit, retained MIT notice, and requirements-based token accounting rewrite. | Literal comparison found only the expected license match in the reviewed integration changes. It can miss nonliteral overlap. | Maintain file-level provenance and verify exact release contents. | ecc/provenance-review.md
+Security and release | Upstream synchronization | Partial | Documented update procedure uses a pinned revision, license and dependency review, tests, and rollback pins. | Procedure exists. Automated sync and live upgrade validation are open. | Repeatable update and rollback with attributable release evidence. | ecc/README.md#upstream-synchronization-and-development-freeze
+Security and release | Enterprise controls and certification | Planned | Approval and evidence records are local. Host policies govern actual permissions. | No enterprise certification or organization-wide controls verified. | Least privilege, externally auditable evidence, verified recovery, and organizational approval. | sdd.md
+Security and release | Advanced enterprise autonomy | Planned | The pilot supervises bounded tasks and stops at consequential decisions. | Autonomous release, production operations, and unattended orchestration are outside the pilot. | Expand validated engineering autonomy within approved and enforceable boundaries. | ecc/README.md#upstream-synchronization-and-development-freeze
+Security and release | Work-laptop authorization | Unknown | Company software and approved AI-host permissions determine whether a pilot can run. | No NBFC approval evidence recorded here. | Use only an explicitly approved snapshot, host, repository, and data scope. | ecc/provenance-review.md
+</script>
+<script>
+'use strict';
+const schema = ['area', 'name', 'status', 'current', 'evidence', 'target', 'source'];
+const rows = document.getElementById('capabilities-data').textContent.trim().split('\n')
+  .map(line => Object.fromEntries(line.split(' | ').map((value, i) => [schema[i], value])));
+const search = document.getElementById('search');
+const area = document.getElementById('area');
+const status = document.getElementById('status');
+const cards = document.getElementById('cards');
+const count = document.getElementById('count');
+for (const name of new Set(rows.map(row => row.area))) area.add(new Option(name, name));
+
+function append(parent, tag, text, className) {
+  const node = document.createElement(tag);
+  if (text) node.textContent = text;
+  if (className) node.className = className;
+  parent.append(node);
+  return node;
+}
+function refresh() {
+  const words = search.value.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const selected = rows.filter(row => {
+    const text = Object.values(row).join(' ').toLowerCase();
+    return (!area.value || row.area === area.value) &&
+      (!status.value || row.status === status.value) &&
+      words.every(word => text.includes(word));
+  });
+  const fragment = document.createDocumentFragment();
+  for (const row of selected) {
+    const card = append(fragment, 'article', '', 'card');
+    const heading = append(card, 'div', '', 'card-top');
+    append(heading, 'span', row.area, 'meta');
+    append(heading, 'span', row.status, 'badge ' + row.status.toLowerCase());
+    append(card, 'h3', row.name);
+    const details = append(card, 'dl');
+    for (const [label, value] of [['Current state', row.current], ['Evidence and limits', row.evidence], ['Target state', row.target]]) {
+      append(details, 'dt', label);
+      append(details, 'dd', value);
+    }
+    append(append(card, 'p'), 'a', 'Open source or evidence').href = row.source;
+  }
+  cards.replaceChildren(fragment);
+  count.textContent = selected.length + ' of ' + rows.length + ' capabilities' +
+    (selected.length ? '' : ' · Try a different search or filter.');
+}
+search.addEventListener('input', refresh);
+area.addEventListener('change', refresh);
+status.addEventListener('change', refresh);
+document.getElementById('clear').addEventListener('click', () => {
+  search.value = area.value = status.value = '';
+  refresh();
+  search.focus();
+});
+refresh();
+</script>
+</body>
+</html>

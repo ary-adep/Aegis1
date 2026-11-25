@@ -37,14 +37,21 @@ class SpecWorkflowTests(unittest.TestCase):
                         '-c', 'core.hooksPath=/dev/null', *args],
                        check=True, capture_output=True, timeout=10)
 
-    def sdd(self, command, *args, error=None):
+    def sdd(self, command, *args, error=None, blocked_stage=None):
         cmd = [sys.executable, '-B', str(SDD), command, str(self.control / 'spec.json')]
         if command != 'validate':
             cmd += ['--workspace', str(self.work), '--approval', str(self.control / 'approval.json')]
-        if command in ('verify', 'check'):
+        if command in ('verify', 'check', 'status'):
             cmd += ['--review', str(self.control / 'review.json'),
                     '--verification', str(self.control / 'verification.json')]
         result = subprocess.run([*cmd, *args], text=True, capture_output=True, timeout=10)
+        if blocked_stage:
+            self.assertEqual(result.returncode, 1, result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual((report['status'], report['stage']), ('blocked', blocked_stage))
+            self.assertIn(error, report['reason'])
+            self.assertTrue(report['next_action'])
+            return report
         if error:
             self.assertEqual(result.returncode, 1, result.stdout)
             self.assertIn(error, result.stderr)
@@ -78,6 +85,29 @@ class SpecWorkflowTests(unittest.TestCase):
         self.sdd('check', error='different workspace snapshot')
         (self.work / 'test.txt').write_text('unapproved file\n')
         self.sdd('check-scope', error='outside approved scope: test.txt')
+
+    def test_status_reuses_gate_and_guides_blocked_handoffs(self):
+        self.sdd('status', blocked_stage='approval', error='approval.json')
+        self.sdd('approve', '--by', 'owner')
+        (self.work / 'app.txt').write_text('change\n')
+        self.sdd('status', blocked_stage='review', error='review.json')
+        self.write('review.json', self.review())
+        evidence = self.control / 'evidence.txt'
+        evidence.unlink()
+        self.sdd('status', blocked_stage='evidence', error='evidence.txt')
+        evidence.write_text('fixture evidence\n')
+        self.sdd('status', blocked_stage='verification', error='verification.json')
+        self.assertFalse((self.control / 'verification.json').exists())
+        self.sdd('verify')
+        before = {p.name: p.read_bytes() for p in self.control.iterdir() if p.is_file()}
+        self.assertEqual(self.sdd('status'), {'status': 'ready', **self.sdd('check')})
+        self.assertEqual({p.name: p.read_bytes() for p in self.control.iterdir() if p.is_file()}, before)
+        evidence.write_text('changed evidence\n')
+        self.sdd('status', blocked_stage='verification', error='changed after verification')
+        (self.work / 'app.txt').write_text('unreviewed change\n')
+        self.sdd('status', blocked_stage='review', error='different workspace snapshot')
+        (self.work / 'test.txt').write_text('unapproved file\n')
+        self.sdd('status', blocked_stage='scope', error='outside approved scope')
 
     def test_existing_overlap_and_spec_changes_require_approval(self):
         (self.work / 'app.txt').write_text('pre-existing edit\n')

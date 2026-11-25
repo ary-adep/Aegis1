@@ -9,6 +9,9 @@ agent's scope depends on measured results against native workflows.
 
 ## Current status
 
+Open the [capability dashboard](docs/capability-dashboard.html) locally in a
+browser for the current state, verification evidence, and target architecture.
+
 This is a supervised pilot with audited instructions, local structural checks,
 and evaluation fixtures. User-supplied Claude transcripts describe implementation
 and review on a small Spring Boot application. Provisional comparisons on the

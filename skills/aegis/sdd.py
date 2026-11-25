@@ -10,6 +10,17 @@ import stat
 import subprocess
 import sys
 
+CHECK_ERRORS = (ValueError, OSError, KeyError, TypeError, subprocess.CalledProcessError)
+STATUS_ACTIONS = {
+    'spec': 'Correct the spec or supply its approved path, then run status again.',
+    'workspace': 'Choose the approved Git worktree and keep handoff records outside it.',
+    'approval': 'Supply the matching approval or obtain a new approval from the authorized owner.',
+    'scope': 'Run check-scope with these inputs. Resolve the listed workspace changes with the owner before review.',
+    'review': 'Obtain an independent review for the current workspace fingerprint.',
+    'evidence': 'Have the independent reviewer resolve the listed gap and attach current evidence.',
+    'verification': 'Have the reviewer confirm current evidence, then run verify using a new verification path.',
+}
+
 
 def sha(data):
     return hashlib.sha256(data).hexdigest()
@@ -160,10 +171,13 @@ def snapshot(root):
     return {'head': head, 'index': index, 'files': files}
 
 
-def scope_check(root, spec, approval):
+def validate_approval(root, spec, approval):
     if approval.get('spec_sha256') != digest(spec) or approval.get('workspace') != str(root):
         raise ValueError('approval is for a different spec or workspace')
     text(approval.get('approved_by'), 'approver')
+
+
+def scope_check(root, spec, approval):
     before = approval['baseline']
     after = snapshot(root)
     if (before['head'], before['index']) != (after['head'], after['index']):
@@ -200,7 +214,7 @@ def review_artifacts(review, criteria, directory):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
-    for command in ('validate', 'approve', 'check-scope', 'verify', 'check'):
+    for command in ('validate', 'approve', 'check-scope', 'verify', 'check', 'status'):
         action = sub.add_parser(command)
         action.add_argument('spec', type=Path)
         if command in ('validate', 'approve'):
@@ -211,14 +225,27 @@ def main():
             action.add_argument('--approval', type=Path, required=True)
         if command == 'approve':
             action.add_argument('--by', required=True)
-        if command in ('verify', 'check'):
+        if command in ('verify', 'check', 'status'):
             action.add_argument('--review', type=Path, required=True)
             action.add_argument('--verification', type=Path, required=True)
     args = parser.parse_args()
+    if args.command != 'status':
+        return execute(args)
+    try:
+        return {'status': 'ready', **execute(args)}
+    except CHECK_ERRORS as error:
+        print(json.dumps({'status': 'blocked', 'stage': args.stage, 'reason': str(error),
+                          'next_action': STATUS_ACTIONS[args.stage]}, indent=2))
+        sys.exit(1)
+
+
+def execute(args):
+    args.stage = 'spec'
     spec = load(args.spec)
     criteria = validate_spec(spec, getattr(args, 'review_ready', False))
     if args.command == 'validate':
         return {'spec': spec['id'], 'criteria': len(criteria), 'spec_sha256': digest(spec)}
+    args.stage = 'workspace'
     root = args.workspace.resolve(strict=True)
     for key in ('spec', 'approval', 'review', 'verification'):
         path = getattr(args, key, None)
@@ -236,12 +263,17 @@ def main():
                     'workspace': str(root), 'baseline': baseline}
         write_new(args.approval, approval)
         return {'spec': spec['id'], 'approval': str(args.approval)}
+    args.stage = 'approval'
     approval = load(args.approval)
+    validate_approval(root, spec, approval)
+    args.stage = 'scope'
     state, changed = scope_check(root, spec, approval)
     state_digest = digest(state)
     if args.command == 'check-scope':
         return {'spec': spec['id'], 'changed_paths': changed, 'workspace_sha256': state_digest}
+    args.stage = 'evidence'
     check_verification_paths(state, criteria, ('existing_checks',))
+    args.stage = 'review'
     review = load(args.review)
     if review.get('workspace_sha256') != state_digest:
         raise ValueError('review is for a different workspace snapshot')
@@ -249,9 +281,11 @@ def main():
     implementer = text(review.get('implemented_by'), 'implementer')
     if reviewer.strip().casefold() == implementer.strip().casefold():
         raise ValueError('independent reviewer must differ from the implementer')
+    args.stage = 'evidence'
     evidence = review_artifacts(review, criteria, args.review.resolve().parent)
     verification = {'approval_sha256': digest(approval), 'review_sha256': digest(review),
                     'workspace_sha256': state_digest, 'artifacts': evidence}
+    args.stage = 'verification'
     if args.command == 'verify':
         write_new(args.verification, verification)
     elif load(args.verification) != verification:
@@ -262,6 +296,6 @@ def main():
 if __name__ == '__main__':
     try:
         print(json.dumps(main(), indent=2))
-    except (ValueError, OSError, KeyError, TypeError, subprocess.CalledProcessError) as error:
+    except CHECK_ERRORS as error:
         print(f'SDD blocked: {error}', file=sys.stderr)
         sys.exit(1)

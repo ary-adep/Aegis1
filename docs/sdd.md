@@ -70,6 +70,20 @@ python3 -B /path/to/Aegis1/skills/aegis/sdd.py check spec.json \
 
 `check` exits nonzero unless the approved spec, worktree, review, and evidence still match the verification record. A changed spec requires a new approval and any changed verified work requires a new review. Record creation refuses to overwrite prior records. The CLI checks file state and record integrity. It relies on the host for permissions and on the reviewer for test execution and judgment. Approval and reviewer names are attestations. Use host access controls to protect those records if enforcing a separation of duties.
 
+For a read-only handoff diagnosis, use `status` with the same arguments as
+`check`:
+
+```sh
+python3 -B /path/to/Aegis1/skills/aegis/sdd.py status spec.json \
+  --workspace /path/to/git-root --approval approval.json \
+  --review review.json --verification verification.json
+```
+
+It returns JSON with `status: ready` and the passing gate result, or
+`status: blocked` with the first blocked stage, reason, and next action.
+Exit codes are 0 for ready and 1 for a blocked gate. It runs the same
+checks as `check` and leaves approval, review, and verification records untouched.
+
 ## Use project-owned checks
 
 Describe how to verify each acceptance criterion in the spec. Reuse the

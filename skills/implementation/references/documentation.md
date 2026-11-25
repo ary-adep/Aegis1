@@ -14,6 +14,17 @@ Organize by reader need: requirements describe the contract, delivery records de
 
 Document current behavior and qualify unmeasured performance or runtime claims. Avoid absolute claims such as every query performing a count or never using an index without supporting evidence.
 
+## Operational guidance
+
+For runbooks and troubleshooting, verify each material claim against the
+relevant code, configuration, observed result, or documentation for the
+framework version in use. A configured retry count does not establish that
+every exception is retried. A retained outbox row or a dead-letter record
+describes one point in delivery and cannot establish the current business
+state. Explain what the operator should check in authoritative state before
+taking a recovery action. Omit extra claims that do not affect that decision
+unless their evidence is available.
+
 ## Completion check
 
 Read the final changed artifacts, not just the write commands or completion summary.
